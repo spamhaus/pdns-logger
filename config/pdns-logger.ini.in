@@ -1,0 +1,9 @@
+
+[globals]
+
+user=nobody
+group=nogroup
+
+bind-ip=*
+bind-port=4242
+

@@ -1,0 +1,27 @@
+
+INCLUDE(FindPkgConfig)
+
+IF(NOT PKG_CONFIG_FOUND)
+    MESSAGE(STATUS "Cannot find PKG-CONFIG cmake extensions. Protobuf modules will not be built.")
+ELSE(NOT PKG_CONFIG_FOUND)
+
+    PKG_CHECK_MODULES(PROTOBUFC QUIET libprotobuf-c)
+
+    IF(NOT ${PROTOBUFC_VERSION})
+        IF(NOT ${PROTOBUFC_FIND_QUIETLY})
+            MESSAGE(STATUS "PROTOBUF-C support not found ${PROTOBUFC_VERSION}")
+        ENDIF(NOT ${PROTOBUFC_FIND_QUIETLY})
+    ELSE(NOT ${PROTOBUFC_VERSION})
+        IF(NOT ${PROTOBUFC_FIND_QUIETLY})
+            MESSAGE(STATUS "PROTOBUF-C support found")
+        ENDIF(NOT ${PROTOBUFC_FIND_QUIETLY})
+        SET(PROTOBUFC_FOUND TRUE)
+    ENDIF(NOT ${PROTOBUFC_VERSION})
+
+ENDIF(NOT PKG_CONFIG_FOUND)
+
+IF(PROTOBUFC_FIND_REQUIRED)
+    IF (NOT ${PROTOBUFC_FOUND})
+        MESSAGE(FATAL_ERROR "Could not find protobuf-c library which is a required prerequisite for pdns-logger")
+    ENDIF (NOT ${PROTOBUFC_FOUND})
+ENDIF(PROTOBUFC_FIND_REQUIRED)

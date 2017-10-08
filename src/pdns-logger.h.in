@@ -1,0 +1,38 @@
+
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <protobuf-c/protobuf-c.h>
+#include <assert.h>
+
+#define PDNS_LOGGER_VERSION 171001
+#define DEFAULT_CONFIG_FILE "@PROJECT_SYSCONF_DIR@" "pdns-logger.ini"
+
+typedef enum pdns_status_e {
+    PDNS_NO,
+    PDNS_OK
+} pdns_status_t;
+
+#define zstr(x)  ( ((x==NULL) || (*x == '\0')) ? 1 : 0)
+#define safe_free(x) if(x != NULL) { free( (void*) x); x = NULL; }
+
+typedef struct globals_s globals_t;
+struct globals_s {
+    char *user;
+    char *group;
+
+    char *config_file;
+    char *bind_ip;
+    int  bind_port;
+
+    char running;
+    char foreground;
+    char verbose;
+
+    int socket;
+};
+
+pdns_status_t parse_config_file(const char *cf, globals_t *globals);
+
+pdns_status_t pdns_socket_run(globals_t *globals);
