@@ -7,13 +7,96 @@
 #include "pdns-logger.h"
 #include "dnsmessage.pb-c.h"
 
-#define MAX_BUFFER_SIZE 1024
+#define MAX_BUFFER_SIZE 8192
+
+static pdns_status_t protobuf_parse(unsigned char *buf, size_t blen) {
+    PBDNSMessage *msg;
+
+    msg = pbdnsmessage__unpack(NULL, blen, (uint8_t *) buf);
+    if (msg == NULL) {
+        assert(0);
+        return PDNS_NO;
+    }
+    else {
+        size_t sz = pbdnsmessage__get_packed_size(msg);
+        fprintf(stderr, "Decoded message size %zu\n", sz);
+
+
+    }
+    /*
+        Data in the PROTOBUF PACKET:
+        messageid
+        serveridentity
+        socketfamily
+        socketprotocol
+        from
+        to
+        inbytes
+        timesec
+        timeusec
+        id
+        requestorid
+        initialrequestid
+        originalrequestorsubnet
+        question
+            qtype
+            qclass
+            qname
+        response
+            rcode
+            rrs (array)
+                type
+                class
+                ttl
+                rdata
+                    type
+                    data
+        appliedpolicy
+    */
+
+    pbdnsmessage__free_unpacked(msg, NULL);
+
+    return PDNS_OK;
+}
+
+static pdns_status_t protobuf_extract(unsigned char *buf, size_t blen) {
+    uint16_t *pplen, plen;
+    unsigned char *pbuf;
+
+    if ( blen < sizeof(uint16_t) ) {
+        return PDNS_RETRY;
+    }
+
+    fprintf(stderr, "bytes: %d %d\n", *buf, *(buf+1));
+
+    pplen = (uint16_t *) buf;
+    plen = ntohs(*pplen);
+
+    if ( blen - sizeof(uint16_t) >= plen ) {
+        /* Decode is possible */
+        fprintf(stderr, "Decoding (pblen = %d)\n", plen);
+        pbuf = buf+2;
+
+        if ( protobuf_parse(pbuf, plen) != PDNS_OK ) {
+            return PDNS_NO;
+        }
+
+        return PDNS_OK;
+    }
+    else {
+        fprintf(stderr, "Retrying (blen = %zu pblen = %d)\n", blen, plen);
+        return PDNS_RETRY;
+    }
+
+    return PDNS_OK;
+}
 
 static void *socket_thread_exec(void *data) {
     int flags;
     int *psocket = (int*) data;
     int socket = *psocket;
-    char buffer[MAX_BUFFER_SIZE];
+    size_t bsize = 0;
+    unsigned char buffer[MAX_BUFFER_SIZE];
 
     /* Set socket non-blocking */
     flags = fcntl (socket, F_GETFL, 0);
@@ -29,7 +112,13 @@ static void *socket_thread_exec(void *data) {
     while ( 1 ) {
         int nbytes;
 
-        nbytes = read (socket, buffer, sizeof(buffer));
+        if ( bsize == MAX_BUFFER_SIZE ) {
+            fprintf(stderr, "Client buffer full!\n");
+            /* Buffer full, should not happen. Let's disconnect the client */
+            break;
+        }
+
+        nbytes = read (socket, buffer+bsize, sizeof(buffer) - bsize);
         if ( nbytes < 0 ) {
             /* Error */
             break;
@@ -38,9 +127,34 @@ static void *socket_thread_exec(void *data) {
             /* EOF */
             break;
         }
+        else {
+            pdns_status_t status;
+
+            fprintf(stderr, "bytes: %d %d <\n", *buffer, *(buffer+1));
+            fprintf(stderr, "Reading %d bytes from socket, appending at offset %zu\n", nbytes, bsize);
+            bsize += nbytes;
+
+            status = protobuf_extract(buffer, bsize);
+            if ( status == PDNS_NO ) {
+                break;
+            }
+            else if ( status == PDNS_RETRY ) {
+                /* Don't alter the buffer */
+            }
+            else if ( status == PDNS_OK ) {
+                /* We should alter the buffer */
+                bsize = 0;
+            }
+            else {
+                /* Should never happen */
+                assert(0);
+            }
+
+        }
     }
 
     fprintf(stderr, "Disconnecting client\n");
+    close(socket);
 
     return NULL;
 }

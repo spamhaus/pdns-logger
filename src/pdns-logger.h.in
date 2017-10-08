@@ -11,7 +11,8 @@
 
 typedef enum pdns_status_e {
     PDNS_NO,
-    PDNS_OK
+    PDNS_OK,
+    PDNS_RETRY
 } pdns_status_t;
 
 #define zstr(x)  ( ((x==NULL) || (*x == '\0')) ? 1 : 0)
@@ -33,6 +34,18 @@ struct globals_s {
     int socket;
 };
 
-pdns_status_t parse_config_file(const char *cf, globals_t *globals);
+typedef pdns_status_t(*init_function_f)(void);
+typedef pdns_status_t(*rotate_function_f)(void);
+typedef pdns_status_t(*stop_function_f)(void);
+typedef pdns_status_t(*log_function_f)(void);
 
+typedef struct pdns_logger_s pdns_logger_t;
+struct pdns_logger_s {
+    init_function_f     start;
+    rotate_function_f   rotate;
+    stop_function_f     stop;
+    log_function_f      log;
+};
+
+pdns_status_t parse_config_file(const char *cf, globals_t *globals);
 pdns_status_t pdns_socket_run(globals_t *globals);
