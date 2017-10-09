@@ -35,6 +35,7 @@ SET (LINKLIBS
 )
 
 IF(SQLITE3_FOUND)
+    ADD_DEFINITIONS(-DSQLITE3_FOUND)
     SET (SOURCES
         ${SOURCES}
             pdns-logger-sqlite.c

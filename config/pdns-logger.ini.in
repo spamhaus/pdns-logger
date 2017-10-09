@@ -17,4 +17,3 @@ force-flush=1
 
 [sqlite3]
 dbfile=/var/lib/pdns-logger/queries.db
-

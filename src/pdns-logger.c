@@ -41,6 +41,7 @@ static pdns_status_t loggers_initialize(const char *conf) {
     memset(engines, 0, sizeof(engines));
 
     engines[engines_count++] = logfile_engine;
+    engines[engines_count++] = sqlite_engine;
 
     for (t = 0; t < engines_count; t++) {
         if (engines[t].start != NULL) {
@@ -123,8 +124,6 @@ static pdns_status_t parse_cli(globals_t * conf, int argc, char **argv) {
 }
 
 int main(int argc, char **argv) {
-    struct sigaction sa;
-
     memset(&globals, 0, sizeof(globals_t));
 
     if (parse_cli(&globals, argc, argv) != PDNS_OK) {

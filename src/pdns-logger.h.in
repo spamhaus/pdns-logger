@@ -44,7 +44,6 @@ fifo_t *fifo_init(void);
 pdns_status_t fifo_push(fifo_t *fifo, void *value);
 void *fifo_pop(fifo_t *fifo);
 
-
 typedef pdns_status_t(*init_function_f)(const char *inifile);
 typedef pdns_status_t(*rotate_function_f)(void);
 typedef pdns_status_t(*stop_function_f)(void);
@@ -59,6 +58,7 @@ struct pdns_logger_s {
 };
 
 extern pdns_logger_t logfile_engine;
+extern pdns_logger_t sqlite_engine;
 
 pdns_status_t parse_config_file(const char *cf, globals_t *globals);
 pdns_status_t pdns_socket_run(globals_t *globals);
