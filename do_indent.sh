@@ -58,7 +58,7 @@ function do_indent() {
 SOURCES=`find src/ -name *.[c,h] -print;`
 
 for SOURCE in $SOURCES; do
-    if $( echo $SOURCE | grep -v --quiet 'libmbedtls' )
+    if $( echo $SOURCE | grep -v --quiet 'foobar' )
     then
         echo $SOURCE
         do_indent $SOURCE $SOURCE

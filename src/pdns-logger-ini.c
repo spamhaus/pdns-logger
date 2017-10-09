@@ -5,37 +5,32 @@
 static int opt_handler(void *user, const char *section, const char *name, const char *value, int lineno) {
     globals_t *globals = user;
 
-    if ( zstr(section) || zstr(name) || zstr(value) ) {
+    if (zstr(section) || zstr(name) || zstr(value)) {
         return 1;
     }
 
-    if ( !strncmp(section, "globals", sizeof("globals")) ) {
-        if ( !strncmp(name, "user", sizeof("user")) ) {
+    if (!strncmp(section, "globals", sizeof("globals"))) {
+        if (!strncmp(name, "user", sizeof("user"))) {
             globals->user = strdup(value);
-        }
-        else if ( !strncmp(name, "group", sizeof("group")) ) {
+        } else if (!strncmp(name, "group", sizeof("group"))) {
             globals->group = strdup(value);
-        }
-        else if ( !strncmp(name, "bind-ip", sizeof("bind-ip")) ) {
+        } else if (!strncmp(name, "bind-ip", sizeof("bind-ip"))) {
             globals->bind_ip = strdup(value);
-        }
-        else if ( !strncmp(name, "bind-port", sizeof("bind-port")) ) {
+        } else if (!strncmp(name, "bind-port", sizeof("bind-port"))) {
             globals->bind_port = atoi(value);
-        }
-        else {
+        } else {
             fprintf(stderr, "Unmanaged INI option '%s' at line %d\n", name, lineno);
         }
 
         return 1;
     }
 
-
     return 1;
 }
 
-pdns_status_t parse_config_file(const char *cf, globals_t *globals) {
+pdns_status_t parse_config_file(const char *cf, globals_t * globals) {
 
-    if ( zstr(cf) ) {
+    if (zstr(cf)) {
         return PDNS_NO;
     }
 

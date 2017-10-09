@@ -9,14 +9,14 @@ static globals_t globals;
 /* ************************************************************************ */
 /* ************************************************************************ */
 
-static int           engines_count = 0;
+static int engines_count = 0;
 static pdns_logger_t engines[3];
 
 pdns_status_t pdns_loggers_log(void *pbm) {
     int t;
 
-    for ( t=0; t < engines_count; t++ ) {
-        if (engines[t].log != NULL ) {
+    for (t = 0; t < engines_count; t++) {
+        if (engines[t].log != NULL) {
             engines[t].log(pbm);
         }
     }
@@ -27,8 +27,8 @@ pdns_status_t pdns_loggers_log(void *pbm) {
 static pdns_status_t pdns_loggers_rotate(void) {
     int t;
 
-    for ( t=0; t < engines_count; t++ ) {
-        if (engines[t].rotate != NULL ) {
+    for (t = 0; t < engines_count; t++) {
+        if (engines[t].rotate != NULL) {
             engines[t].rotate();
         }
     }
@@ -42,8 +42,8 @@ static pdns_status_t loggers_initialize(const char *conf) {
 
     engines[engines_count++] = logfile_engine;
 
-    for ( t=0; t < engines_count; t++ ) {
-        if (engines[t].start != NULL ) {
+    for (t = 0; t < engines_count; t++) {
+        if (engines[t].start != NULL) {
             engines[t].start(conf);
         }
     }
@@ -70,7 +70,7 @@ static void signal_stop(int sig) {
     return;
 }
 
-static pdns_status_t parse_cli(globals_t *conf, int argc, char **argv) {
+static pdns_status_t parse_cli(globals_t * conf, int argc, char **argv) {
     int c;
 
     while ((c = getopt(argc, argv, "hvc:f:")) != -1) {
@@ -127,12 +127,12 @@ int main(int argc, char **argv) {
 
     memset(&globals, 0, sizeof(globals_t));
 
-    if ( parse_cli(&globals, argc, argv) != PDNS_OK ) {
+    if (parse_cli(&globals, argc, argv) != PDNS_OK) {
         fprintf(stderr, "Error parsing cli options. Exiting.\n");
         return 1;
     }
 
-    if ( parse_config_file(globals.config_file, &globals) != PDNS_OK ) {
+    if (parse_config_file(globals.config_file, &globals) != PDNS_OK) {
         fprintf(stderr, "Error parsing config file. Exiting.\n");
         return 1;
     }
@@ -147,7 +147,7 @@ int main(int argc, char **argv) {
 
     globals.running = 1;
 
-    if ( pdns_socket_run(&globals) != PDNS_OK ) {
+    if (pdns_socket_run(&globals) != PDNS_OK) {
         fprintf(stderr, "Cannot start the socket process. Is there another daemon already listening ?\n");
         exit(EXIT_FAILURE);
     }

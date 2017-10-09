@@ -11,18 +11,16 @@ static int force_flush = 0;
 static int opt_handler(void *user, const char *section, const char *name, const char *value, int lineno) {
     (void) user;
 
-    if ( zstr(section) || zstr(name) || zstr(value) ) {
+    if (zstr(section) || zstr(name) || zstr(value)) {
         return 1;
     }
 
-    if ( !strncmp(section, "logfile", sizeof("logfile")) ) {
-        if ( !strncmp(name, "logfile", sizeof("logfile")) ) {
+    if (!strncmp(section, "logfile", sizeof("logfile"))) {
+        if (!strncmp(name, "logfile", sizeof("logfile"))) {
             file = strdup(value);
-        }
-        else if ( !strncmp(name, "force-flush", sizeof("force-flush")) ) {
+        } else if (!strncmp(name, "force-flush", sizeof("force-flush"))) {
             force_flush = atoi(value) ? 1 : 0;
-        }
-        else {
+        } else {
             fprintf(stderr, "Unmanaged INI option '%s' at line %d\n", name, lineno);
         }
 
@@ -34,7 +32,7 @@ static int opt_handler(void *user, const char *section, const char *name, const 
 }
 
 static pdns_status_t logfile_init(const char *inifile) {
-    if ( zstr(inifile) ) {
+    if (zstr(inifile)) {
         return PDNS_NO;
     }
 
@@ -43,20 +41,20 @@ static pdns_status_t logfile_init(const char *inifile) {
         return PDNS_NO;
     }
 
-    if ( zstr(file) ) {
+    if (zstr(file)) {
         fprintf(stderr, "logfile: no log file set. Disabling.\n");
         return PDNS_NO;
     }
 
     /*
-    queue = fifo_init();
-    if ( queue == NULL ) {
-        return PDNS_NO;
-    }
-    */
+       queue = fifo_init();
+       if ( queue == NULL ) {
+       return PDNS_NO;
+       }
+     */
 
     fp = fopen(file, "w+");
-    if ( fp == NULL ) {
+    if (fp == NULL) {
         fprintf(stderr, "logfile: cannot open '%s' for writing\n", file);
         return PDNS_NO;
     }
@@ -65,9 +63,9 @@ static pdns_status_t logfile_init(const char *inifile) {
 }
 
 static pdns_status_t logfile_rotate(void) {
-    if ( fp != NULL ) {
+    if (fp != NULL) {
         fp = freopen(file, "w+", fp);
-        if ( fp == NULL ) {
+        if (fp == NULL) {
             fprintf(stderr, "logfile: cannot open '%s' for writing\n", file);
             return PDNS_NO;
         }
@@ -79,7 +77,7 @@ static pdns_status_t logfile_rotate(void) {
 static pdns_status_t logfile_stop(void) {
     safe_free(file);
 
-    if ( fp != NULL ) {
+    if (fp != NULL) {
         fclose(fp);
     }
 
@@ -94,7 +92,7 @@ static pdns_status_t logfile_log(void *rawpb) {
     char str[1024] = "";
     char tmp[1024] = "";
 
-    if ( msg == NULL || msg->response == NULL ) {
+    if (msg == NULL || msg->response == NULL) {
         return PDNS_OK;
     }
 
@@ -107,14 +105,14 @@ static pdns_status_t logfile_log(void *rawpb) {
     }
 
     q = msg->question;
-    if ( q != NULL ) {
-        if ( q->has_qtype ) {
-            pc = snprintf(tmp, sizeof(tmp), "qtype: %s ", pdns_logger_type2p(q->qtype) );
+    if (q != NULL) {
+        if (q->has_qtype) {
+            pc = snprintf(tmp, sizeof(tmp), "qtype: %s ", pdns_logger_type2p(q->qtype));
             strncat(str, tmp, sz);
             sz -= pc;
         }
 
-        if ( q->has_qclass ) {
+        if (q->has_qclass) {
             pc = snprintf(tmp, sizeof(tmp), "qclass: %s ", pdns_logger_class2p(q->qclass));
             strncat(str, tmp, sz);
             sz -= pc;
@@ -126,8 +124,8 @@ static pdns_status_t logfile_log(void *rawpb) {
     }
 
     r = msg->response;
-    if ( r != NULL ) {
-        if ( r->has_rcode ) {
+    if (r != NULL) {
+        if (r->has_rcode) {
             pc = snprintf(tmp, sizeof(tmp), "rcode: %s ", pdns_logger_rcode2p(r->rcode));
             strncat(str, tmp, sz);
             sz -= pc;
@@ -170,7 +168,7 @@ static pdns_status_t logfile_log(void *rawpb) {
                     if (rr->has_type && rr->type == 1 && rr->rdata.len == 4) {
                         char ip[INET6_ADDRSTRLEN];
 
-                        inet_ntop(AF_INET, (const void*) rr->rdata.data, ip, sizeof(ip));
+                        inet_ntop(AF_INET, (const void *) rr->rdata.data, ip, sizeof(ip));
 
                         pc = snprintf(tmp, sizeof(tmp), "rdata-%d: %s ", t, ip);
                         strncat(str, tmp, sz);
@@ -178,7 +176,7 @@ static pdns_status_t logfile_log(void *rawpb) {
                     } else if (rr->has_type && rr->type == 28 && rr->rdata.len == 16) {
                         char ip[INET6_ADDRSTRLEN];
 
-                        inet_ntop(AF_INET6, (const void*) rr->rdata.data, ip, sizeof(ip));
+                        inet_ntop(AF_INET6, (const void *) rr->rdata.data, ip, sizeof(ip));
 
                         pc = snprintf(tmp, sizeof(tmp), "rdata-%d: %s ", t, ip);
                         strncat(str, tmp, sz);
@@ -189,8 +187,7 @@ static pdns_status_t logfile_log(void *rawpb) {
                         pc = snprintf(tmp, sizeof(tmp), "rdata-%d: %s ", t, rr->rdata.data);
                         strncat(str, tmp, sz);
                         sz -= pc;
-                    }
-                    else {
+                    } else {
                         pc = snprintf(tmp, sizeof(tmp), "rdata (not supported) ");
                         strncat(str, tmp, sz);
                         sz -= pc;
@@ -207,13 +204,12 @@ static pdns_status_t logfile_log(void *rawpb) {
         }
     }
 
-    if ( fp != NULL ) {
+    if (fp != NULL) {
         fprintf(fp, "%s\n", str);
-        if ( force_flush ) {
+        if (force_flush) {
             fflush(fp);
         }
-    }
-    else {
+    } else {
         fprintf(stderr, "%s\n", str);
     }
 

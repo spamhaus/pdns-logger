@@ -90,21 +90,21 @@ const struct dns_nameval dns_rcodetab[] = {
 /* *INDENT-ON* */
 
 const char *pdns_logger_rcode2p(enum dns_rcode_e i) {
-    if ( i <  sizeof(dns_rcodetab)/ sizeof(dns_rcodetab[0]) ) {
+    if (i < sizeof(dns_rcodetab) / sizeof(dns_rcodetab[0])) {
         return dns_rcodetab[i].name;
     }
     return NULL;
 }
 
 const char *pdns_logger_type2p(enum dns_type_e i) {
-    if ( i <  sizeof(dns_typetab)/ sizeof(dns_typetab[0]) ) {
+    if (i < sizeof(dns_typetab) / sizeof(dns_typetab[0])) {
         return dns_typetab[i].name;
     }
     return NULL;
 }
 
 const char *pdns_logger_class2p(enum dns_class_e i) {
-    if ( i <  sizeof(dns_classtab)/ sizeof(dns_classtab[0]) ) {
+    if (i < sizeof(dns_classtab) / sizeof(dns_classtab[0])) {
         return dns_classtab[i].name;
     }
     return NULL;

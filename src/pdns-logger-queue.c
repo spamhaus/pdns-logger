@@ -19,7 +19,7 @@ fifo_t *fifo_init(void) {
     pthread_mutexattr_t attr;
 
     fifo = malloc(sizeof(fifo_t));
-    if ( fifo != NULL ) {
+    if (fifo != NULL) {
         memset(fifo, 0, sizeof(fifo_t));
         pthread_mutexattr_init(&attr);
         pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
@@ -29,25 +29,23 @@ fifo_t *fifo_init(void) {
     return fifo;
 }
 
-pdns_status_t fifo_push(fifo_t *fifo, void *value) {
+pdns_status_t fifo_push(fifo_t * fifo, void *value) {
     fifo_item_t *item;
-    if ( fifo == NULL || value == NULL ) {
+    if (fifo == NULL || value == NULL) {
         return PDNS_NO;
     }
 
     item = malloc(sizeof(fifo_item_t));
-    if ( item != NULL ) {
+    if (item != NULL) {
         item->data = value;
 
         pthread_mutex_lock(&fifo->lock);
-        if ( fifo->tail == NULL && fifo->head == NULL ) {
+        if (fifo->tail == NULL && fifo->head == NULL) {
             fifo->head = fifo->tail = item;
-        }
-        else if ( fifo->tail != NULL || fifo->head != NULL ) {
+        } else if (fifo->tail != NULL || fifo->head != NULL) {
             /* Should not happen */
             assert(0);
-        }
-        else {
+        } else {
             item->next = fifo->head;
             fifo->head = item;
         }
@@ -61,29 +59,27 @@ pdns_status_t fifo_push(fifo_t *fifo, void *value) {
     return PDNS_NO;
 }
 
-void *fifo_pop(fifo_t *fifo) {
+void *fifo_pop(fifo_t * fifo) {
     void *ret;
     fifo_item_t *item = NULL;
 
-    if ( fifo == NULL ) {
+    if (fifo == NULL) {
         return NULL;
     }
 
     pthread_mutex_lock(&fifo->lock);
-    if ( fifo->head == NULL && fifo->tail == NULL ) {
+    if (fifo->head == NULL && fifo->tail == NULL) {
         /* Empty */
-    }
-    else if ( fifo->head != NULL && fifo->tail == fifo->head ) {
+    } else if (fifo->head != NULL && fifo->tail == fifo->head) {
         item = fifo->head;
         fifo->head = fifo->tail = NULL;
-    }
-    else {
+    } else {
         item = fifo->head;
         fifo->head = item->next;
     }
     pthread_mutex_unlock(&fifo->lock);
 
-    if ( item != NULL ) {
+    if (item != NULL) {
         ret = item->data;
         safe_free(item);
         return ret;

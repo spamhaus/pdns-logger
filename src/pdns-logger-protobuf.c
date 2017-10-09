@@ -16,8 +16,7 @@ static pdns_status_t protobuf_parse(unsigned char *buf, size_t blen) {
     if (msg == NULL) {
         assert(0);
         return PDNS_NO;
-    }
-    else {
+    } else {
 #ifdef DEBUG
         size_t sz = pbdnsmessage__get_packed_size(msg);
         fprintf(stderr, "Decoded message size %zu\n", sz);
@@ -25,76 +24,74 @@ static pdns_status_t protobuf_parse(unsigned char *buf, size_t blen) {
         pdns_loggers_log(msg);
     }
     /*
-        Data in the PROTOBUF PACKET:
-        messageid
-        serveridentity
-        socketfamily
-        socketprotocol
-        from
-        to
-        inbytes
-        timesec
-        timeusec
-        id
-        requestorid
-        initialrequestid
-        originalrequestorsubnet
-        question
-            qtype
-            qclass
-            qname
-        response
-            rcode
-            rrs (array)
-                type
-                class
-                ttl
-                rdata
-                    type
-                    data
-        appliedpolicy
-    */
+       Data in the PROTOBUF PACKET:
+       messageid
+       serveridentity
+       socketfamily
+       socketprotocol
+       from
+       to
+       inbytes
+       timesec
+       timeusec
+       id
+       requestorid
+       initialrequestid
+       originalrequestorsubnet
+       question
+       qtype
+       qclass
+       qname
+       response
+       rcode
+       rrs (array)
+       type
+       class
+       ttl
+       rdata
+       type
+       data
+       appliedpolicy
+     */
 
     pbdnsmessage__free_unpacked(msg, NULL);
 
     return PDNS_OK;
 }
 
-static pdns_status_t protobuf_extract(unsigned char *buf, size_t *blen) {
+static pdns_status_t protobuf_extract(unsigned char *buf, size_t * blen) {
     uint16_t *pplen, plen;
     unsigned char *pbuf;
 
-    if ( *blen < sizeof(uint16_t) ) {
+    if (*blen < sizeof(uint16_t)) {
         return PDNS_RETRY;
     }
-
 #ifdef DEBUG
-    fprintf(stderr, "bytes: %d %d (over %zu)\n", *buf, *(buf+1), *blen);
+    fprintf(stderr, "bytes: %d %d (over %zu)\n", *buf, *(buf + 1), *blen);
 #endif
 
-    while ( 1 ) {
+    while (1) {
         pplen = (uint16_t *) buf;
         plen = ntohs(*pplen);
 
-        if ( *blen >= plen + sizeof(uint16_t)) {
+        if (*blen >= plen + sizeof(uint16_t)) {
             /* Decode is possible */
 #ifdef DEBUG
             fprintf(stderr, "Decoding (pblen = %d)\n", plen);
 #endif
-            pbuf = buf+2;
+            pbuf = buf + 2;
 
             protobuf_parse(pbuf, plen);
-            memmove(buf, buf+plen+2, *blen - plen - 2);
+            memmove(buf, buf + plen + 2, *blen - plen - 2);
             *blen = *blen - plen - 2;
 
 #ifdef DEBUG
             fprintf(stderr, "Remaining (blen = %zu)\n", *blen);
 #endif
-            if ( *blen == 0 ) {
+            if (*blen == 0) {
                 return PDNS_OK;
             }
-        }
-        else {
+        } else {
 #ifdef DEBUG
             fprintf(stderr, "Retrying (blen = %zu pblen = %d)\n", *blen, plen);
 #endif
@@ -107,26 +104,26 @@ static pdns_status_t protobuf_extract(unsigned char *buf, size_t *blen) {
 
 static void *socket_thread_exec(void *data) {
     int flags;
-    int *psocket = (int*) data;
+    int *psocket = (int *) data;
     int socket = *psocket;
     size_t bsize = 0;
     unsigned char buffer[MAX_BUFFER_SIZE];
 
     /* Set socket non-blocking */
-    flags = fcntl (socket, F_GETFL, 0);
-    if ( flags == -1 ) {
+    flags = fcntl(socket, F_GETFL, 0);
+    if (flags == -1) {
         return PDNS_NO;
     }
 
     flags |= !O_NONBLOCK;
-    if ( fcntl (socket, F_SETFL, flags) == -1 ) {
+    if (fcntl(socket, F_SETFL, flags) == -1) {
         return PDNS_NO;
     }
 
-    while ( 1 ) {
+    while (1) {
         int nbytes;
 
-        if ( bsize == MAX_BUFFER_SIZE ) {
+        if (bsize == MAX_BUFFER_SIZE) {
 #ifdef DEBUG
             fprintf(stderr, "Client buffer full!\n");
 #endif
@@ -134,35 +131,30 @@ static void *socket_thread_exec(void *data) {
             break;
         }
 
-        nbytes = read (socket, buffer+bsize, sizeof(buffer) - bsize);
-        if ( nbytes < 0 ) {
+        nbytes = read(socket, buffer + bsize, sizeof(buffer) - bsize);
+        if (nbytes < 0) {
             /* Error */
             break;
-        }
-        else if ( nbytes == 0 ) {
+        } else if (nbytes == 0) {
             /* EOF */
             break;
-        }
-        else {
+        } else {
             pdns_status_t status = PDNS_RETRY;
 
 #ifdef DEBUG
-            fprintf(stderr, "bytes: %d %d <\n", *buffer, *(buffer+1));
+            fprintf(stderr, "bytes: %d %d <\n", *buffer, *(buffer + 1));
             fprintf(stderr, "Reading %d bytes from socket, appending at offset %zu\n", nbytes, bsize);
 #endif
             bsize += nbytes;
 
             status = protobuf_extract(buffer, &bsize);
-            if ( status == PDNS_NO ) {
+            if (status == PDNS_NO) {
                 break;
-            }
-            else if ( status == PDNS_RETRY ) {
+            } else if (status == PDNS_RETRY) {
                 /* Don't alter the buffer */
-            }
-            else if ( status == PDNS_OK ) {
+            } else if (status == PDNS_OK) {
                 /* We should alter the buffer */
-            }
-            else {
+            } else {
                 /* Should never happen */
                 assert(0);
             }
@@ -186,42 +178,40 @@ static pdns_status_t socket_start_thread(int socket) {
     return PDNS_OK;
 }
 
-static pdns_status_t socket_loop(globals_t *conf) {
+static pdns_status_t socket_loop(globals_t * conf) {
     int i;
     struct sockaddr_in client_sa;
     fd_set active_fd_set, read_fd_set;
 
-    FD_ZERO (&active_fd_set);
-    FD_SET (conf->socket, &active_fd_set);
+    FD_ZERO(&active_fd_set);
+    FD_SET(conf->socket, &active_fd_set);
 
-    while ( conf->running ) {
+    while (conf->running) {
         read_fd_set = active_fd_set;
 
-        if (select (FD_SETSIZE, &read_fd_set, NULL, NULL, NULL) < 0) {
+        if (select(FD_SETSIZE, &read_fd_set, NULL, NULL, NULL) < 0) {
             return PDNS_NO;
         }
 
-        usleep(1000000 / 10); /* Let's slow things down ... */
+        usleep(1000000 / 10);   /* Let's slow things down ... */
 
         for (i = 0; i < FD_SETSIZE; ++i) {
-            if (FD_ISSET (i, &read_fd_set)) {
+            if (FD_ISSET(i, &read_fd_set)) {
                 if (i == conf->socket) {
                     /* Connection request on original socket. */
                     int new;
                     size_t size;
 
-                    size = sizeof (client_sa);
-                    new = accept(conf->socket, (struct sockaddr *) &client_sa, (socklen_t *) &size);
+                    size = sizeof(client_sa);
+                    new = accept(conf->socket, (struct sockaddr *) &client_sa, (socklen_t *) & size);
 
-                    if ( new < 0 ) {
+                    if (new < 0) {
                         // TODO ERROR;
-                    }
-                    else {
-                        fprintf (stderr, "Connection from host %s, port %d.\n", inet_ntoa (client_sa.sin_addr), ntohs(client_sa.sin_port));
+                    } else {
+                        fprintf(stderr, "Connection from host %s, port %d.\n", inet_ntoa(client_sa.sin_addr), ntohs(client_sa.sin_port));
                         socket_start_thread(new);
                     }
-                }
-                else {
+                } else {
                     /* Should never happen */
                     assert(0);
                 }
@@ -232,53 +222,53 @@ static pdns_status_t socket_loop(globals_t *conf) {
     return PDNS_OK;
 }
 
-static pdns_status_t socket_start(globals_t *conf) {
+static pdns_status_t socket_start(globals_t * conf) {
     int flags;
     struct sockaddr_in sa;
 
-    conf->socket = socket(AF_INET , SOCK_STREAM , 0);
-    if ( conf->socket == -1 ) {
+    conf->socket = socket(AF_INET, SOCK_STREAM, 0);
+    if (conf->socket == -1) {
         return PDNS_NO;
     }
 
     sa.sin_family = AF_INET;
     sa.sin_addr.s_addr = INADDR_ANY;
-    sa.sin_port = htons( conf->bind_port );
+    sa.sin_port = htons(conf->bind_port);
 
     flags = 1;
     if (setsockopt(conf->socket, SOL_SOCKET, SO_REUSEADDR, &flags, sizeof(flags)) < 0) {
         fprintf(stderr, "Cannot set SO_REUSEADDR\n");
     }
 
-    if( bind(conf->socket,(struct sockaddr *)&sa , sizeof(sa)) < 0) {
+    if (bind(conf->socket, (struct sockaddr *) &sa, sizeof(sa)) < 0) {
         fprintf(stderr, "Bind failed. Error\n");
         return PDNS_NO;
     }
 
-    flags = fcntl (conf->socket, F_GETFL, 0);
-    if ( flags == -1 ) {
+    flags = fcntl(conf->socket, F_GETFL, 0);
+    if (flags == -1) {
         return PDNS_NO;
     }
 
     flags |= O_NONBLOCK;
-    if ( fcntl (conf->socket, F_SETFL, flags) == -1 ) {
+    if (fcntl(conf->socket, F_SETFL, flags) == -1) {
         return PDNS_NO;
     }
 
-    if ( listen(conf->socket, SOMAXCONN) < 0 ) {
+    if (listen(conf->socket, SOMAXCONN) < 0) {
         return PDNS_NO;
     }
 
     return PDNS_OK;
 }
 
-static pdns_status_t socket_close(globals_t *conf) {
+static pdns_status_t socket_close(globals_t * conf) {
     close(conf->socket);
     return PDNS_OK;
 }
 
-pdns_status_t pdns_socket_run(globals_t *globals) {
-    if ( socket_start(globals) == PDNS_OK ) {
+pdns_status_t pdns_socket_run(globals_t * globals) {
+    if (socket_start(globals) == PDNS_OK) {
         socket_loop(globals);
         return socket_close(globals);
     }
