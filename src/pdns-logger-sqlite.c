@@ -148,14 +148,6 @@ static pdns_status_t logsqlite_stop(void) {
 }
 
 static pdns_status_t logsqlite_log(void *rawpb) {
-/*
-#define SQL_INSERT \
-    "INSERT INTO logs (" \
-    "  ts, id, qtype, qclass, qname, rcode, rcount, rname, rtype, rclass, rttl, rdata, policy " \
-    ") VALUES (" \
-    "  %ld, %d, '%q', '%q', '%q', '%q', %d, '%q', '%q', '%q', %ld, '%q', '%q'  " \
-    ")"
-*/
     char *sql = NULL;
     char ip4[INET6_ADDRSTRLEN];
     char ip6[INET6_ADDRSTRLEN];

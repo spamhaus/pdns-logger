@@ -12,8 +12,10 @@ facility=syslog
 level=debug
 
 [logfile]
+only-rewrites=1
 logfile=/var/log/pdns-logger/pdns.log
 force-flush=1
 
 [sqlite3]
+only-rewrites=1
 dbfile=/var/lib/pdns-logger/queries.db
