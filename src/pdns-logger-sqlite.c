@@ -148,126 +148,130 @@ static pdns_status_t logsqlite_stop(void) {
 }
 
 static pdns_status_t logsqlite_log(void *rawpb) {
-#if 0
 /*
+#define SQL_INSERT \
+    "INSERT INTO logs (" \
+    "  ts, id, qtype, qclass, qname, rcode, rcount, rname, rtype, rclass, rttl, rdata, policy " \
+    ") VALUES (" \
+    "  %ld, %d, '%q', '%q', '%q', '%q', %d, '%q', '%q', '%q', %ld, '%q', '%q'  " \
+    ")"
+*/
+    char *sql = NULL;
+    char ip4[INET6_ADDRSTRLEN];
+    char ip6[INET6_ADDRSTRLEN];
     PBDNSMessage *msg = rawpb;
     PBDNSMessage__DNSQuestion *q;
     PBDNSMessage__DNSResponse *r;
-    int sz, pc;
-    char str[1024] = "";
-    char tmp[1024] = "";
+    int ts = 0;
+    int msgid = 0;
+    const char *qtype = NULL;
+    const char *qclass = NULL;
+    const char *qname = NULL;
+    const char *rcode = NULL;
+    int rcount = 0;
+    char *rname = NULL;
+    const char *rtype = NULL;
+    const char *rclass = NULL;
+    int rttl = 0;
+    char *rdata = NULL;
+    char *policy = NULL;
 
     if (msg == NULL || msg->response == NULL) {
         return PDNS_OK;
     }
 
-    sz = sizeof(str) - 1;
-
     if (msg->has_id) {
-        pc = snprintf(tmp, sizeof(tmp), "QID: %d ", msg->id);
-        strncat(str, tmp, sz);
-        sz -= pc;
+        msgid = msg->id;
+    }
+
+    if (msg->has_timesec) {
+        ts = msg->timesec;
     }
 
     q = msg->question;
     if (q != NULL) {
         if (q->has_qtype) {
-            pc = snprintf(tmp, sizeof(tmp), "qtype: %s ", pdns_logger_type2p(q->qtype));
-            strncat(str, tmp, sz);
-            sz -= pc;
+            qtype = pdns_logger_type2p(q->qtype);
         }
 
         if (q->has_qclass) {
-            pc = snprintf(tmp, sizeof(tmp), "qclass: %s ", pdns_logger_class2p(q->qclass));
-            strncat(str, tmp, sz);
-            sz -= pc;
+            qclass = pdns_logger_class2p(q->qclass);
         }
 
-        pc = snprintf(tmp, sizeof(tmp), "qname: %s ", q->qname);
-        strncat(str, tmp, sz);
-        sz -= pc;
+        qname = q->qname;
     }
 
     r = msg->response;
     if (r != NULL) {
         if (r->has_rcode) {
-            pc = snprintf(tmp, sizeof(tmp), "rcode: %s ", pdns_logger_rcode2p(r->rcode));
-            strncat(str, tmp, sz);
-            sz -= pc;
+            rcode = pdns_logger_rcode2p(r->rcode);
+        }
+
+        if (!zstr(r->appliedpolicy)) {
+            policy = r->appliedpolicy;
         }
 
         if (r->n_rrs > 0) {
             unsigned int t;
             PBDNSMessage__DNSResponse__DNSRR *rr;
 
-            pc = snprintf(tmp, sizeof(tmp), "rrcount: %zu ", r->n_rrs);
-            strncat(str, tmp, sz);
-            sz -= pc;
-
+            rcount = r->n_rrs;
             for (t = 1; t <= r->n_rrs; t++) {
                 rr = r->rrs[t - 1];
-
-                pc = snprintf(tmp, sizeof(tmp), "rname-%d: %s ", t, rr->name);
-                strncat(str, tmp, sz);
-                sz -= pc;
+                rname = rr->name;
 
                 if (rr->has_type) {
-                    pc = snprintf(tmp, sizeof(tmp), "rtype-%d: %s ", t, pdns_logger_type2p(rr->type));
-                    strncat(str, tmp, sz);
-                    sz -= pc;
+                    rtype = pdns_logger_type2p(rr->type);
                 }
 
                 if (rr->has_class_) {
-                    pc = snprintf(tmp, sizeof(tmp), "rclass-%d: %s ", t, pdns_logger_class2p(rr->class_));
-                    strncat(str, tmp, sz);
-                    sz -= pc;
+                    rclass = pdns_logger_class2p(rr->class_);
                 }
 
                 if (rr->has_ttl) {
-                    pc = snprintf(tmp, sizeof(tmp), "rttl-%d: %d ", t, rr->ttl);
-                    strncat(str, tmp, sz);
-                    sz -= pc;
+                    rttl = rr->ttl;
                 }
 
                 if (rr->has_rdata) {
                     if (rr->has_type && rr->type == 1 && rr->rdata.len == 4) {
-                        char ip[INET6_ADDRSTRLEN];
-
-                        inet_ntop(AF_INET, (const void *) rr->rdata.data, ip, sizeof(ip));
-
-                        pc = snprintf(tmp, sizeof(tmp), "rdata-%d: %s ", t, ip);
-                        strncat(str, tmp, sz);
-                        sz -= pc;
+                        inet_ntop(AF_INET, (const void *) rr->rdata.data, ip4, sizeof(ip4));
+                        rdata = ip4;
                     } else if (rr->has_type && rr->type == 28 && rr->rdata.len == 16) {
-                        char ip[INET6_ADDRSTRLEN];
-
-                        inet_ntop(AF_INET6, (const void *) rr->rdata.data, ip, sizeof(ip));
-
-                        pc = snprintf(tmp, sizeof(tmp), "rdata-%d: %s ", t, ip);
-                        strncat(str, tmp, sz);
-                        sz -= pc;
+                        inet_ntop(AF_INET6, (const void *) rr->rdata.data, ip6, sizeof(ip6));
+                        rdata = ip6;
                     } else if (rr->has_type && ((rr->type == 2) || (rr->type == 5) || (rr->type == 6) || (rr->type == 15))) {
-                        pc = snprintf(tmp, sizeof(tmp), "rdata-%d: %s ", t, rr->rdata.data);
-                        strncat(str, tmp, sz);
-                        sz -= pc;
+                        rdata = (char *) rr->rdata.data;
                     } else {
-                        pc = snprintf(tmp, sizeof(tmp), "rdata (not supported) ");
-                        strncat(str, tmp, sz);
-                        sz -= pc;
+                        rdata = "[Not Supported]";
                     }
                 }
+
             }
-
+        } else {
         }
 
-        if (!zstr(r->appliedpolicy)) {
-            pc = snprintf(tmp, sizeof(tmp), "policy: '%s' ", r->appliedpolicy);
-            strncat(str, tmp, sz);
-            sz -= pc;
-        }
     }
-*/
-#endif
+/* *INDENT-OFF* */
+    sql = sqlite3_mprintf(SQL_INSERT,
+        ts,
+        msgid,
+        qtype,
+        qclass,
+        qname,
+        rcode,
+        rcount,
+        rname,
+        rtype,
+        rclass,
+        rttl,
+        rdata ? rdata : "",
+        policy ? policy : ""
+    );
+/* *INDENT-ON* */
+
+    fprintf(stderr, "%s\n", sql);
+    sqlite3_free(sql);
+
     return PDNS_OK;
 }
 
