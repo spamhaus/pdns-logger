@@ -20,7 +20,6 @@ SET(SOURCES
 
     pdns-logger-file.c
     #pdns-logger-syslog.c
-    #pdns-logger-sqlite.c
 
     pdns-logger-protobuf.c
     pdns-logger-queue.c
@@ -29,10 +28,22 @@ SET(SOURCES
     pdns-logger.c
 )
 
+
 SET (LINKLIBS
     ${PROTOBUFC_LIBRARIES}
     pthread
 )
+
+IF(SQLITE3_FOUND)
+    SET (SOURCES
+        ${SOURCES}
+            pdns-logger-sqlite.c
+    )
+    SET (LINKLIBS
+        ${LINKLIBS}
+            ${SQLITE3_LIBRARIES}
+    )
+ENDIF(SQLITE3_FOUND)
 
 ADD_EXECUTABLE (
     pdns-logger
