@@ -24,6 +24,7 @@ SET(SOURCES
 
     pdns-logger-protobuf.c
     pdns-logger-queue.c
+    pdns-logger-dns.c
     pdns-logger-ini.c
     pdns-logger.c
 )

@@ -18,8 +18,8 @@ static pdns_status_t protobuf_parse(unsigned char *buf, size_t blen) {
         return PDNS_NO;
     }
     else {
-        size_t sz = pbdnsmessage__get_packed_size(msg);
 #ifdef DEBUG
+        size_t sz = pbdnsmessage__get_packed_size(msg);
         fprintf(stderr, "Decoded message size %zu\n", sz);
 #endif
         pdns_loggers_log(msg);

@@ -9,6 +9,8 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+#include "pdns-logger-dns.h"
+
 #define PDNS_LOGGER_VERSION 171001
 #define DEFAULT_CONFIG_FILE "@PROJECT_SYSCONF_DIR@" "pdns-logger.ini"
 

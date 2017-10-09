@@ -13,6 +13,7 @@ level=debug
 
 [logfile]
 logfile=/var/log/pdns-logger/pdns.log
+force-flush=1
 
 [sqlite3]
 dbfile=/var/lib/pdns-logger/queries.db

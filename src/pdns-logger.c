@@ -3,7 +3,6 @@
 #include <signal.h>
 #include "pdns-logger.h"
 
-static int stopped = 0;
 static globals_t globals;
 
 /* ************************************************************************ */
@@ -19,6 +18,18 @@ pdns_status_t pdns_loggers_log(void *pbm) {
     for ( t=0; t < engines_count; t++ ) {
         if (engines[t].log != NULL ) {
             engines[t].log(pbm);
+        }
+    }
+
+    return PDNS_OK;
+}
+
+static pdns_status_t pdns_loggers_rotate(void) {
+    int t;
+
+    for ( t=0; t < engines_count; t++ ) {
+        if (engines[t].rotate != NULL ) {
+            engines[t].rotate();
         }
     }
 
@@ -47,13 +58,13 @@ static pdns_status_t loggers_initialize(const char *conf) {
 static void signal_rotate(int sig) {
     (void) sig;
     fprintf(stderr, "Rotating logfiles...\n");
+    pdns_loggers_rotate();
     return;
 }
 
 static void signal_stop(int sig) {
     (void) sig;
 
-    stopped++;
     globals.running = 0;
 
     return;
@@ -112,6 +123,8 @@ static pdns_status_t parse_cli(globals_t *conf, int argc, char **argv) {
 }
 
 int main(int argc, char **argv) {
+    struct sigaction sa;
+
     memset(&globals, 0, sizeof(globals_t));
 
     if ( parse_cli(&globals, argc, argv) != PDNS_OK ) {
@@ -130,9 +143,10 @@ int main(int argc, char **argv) {
     signal(SIGHUP, SIG_IGN);
     signal(SIGPIPE, SIG_IGN);
     signal(SIGTERM, signal_stop);
-    signal(SIGUSR1, signal_rotate);
+    signal(SIGHUP, signal_rotate);
 
     globals.running = 1;
+
     if ( pdns_socket_run(&globals) != PDNS_OK ) {
         fprintf(stderr, "Cannot start the socket process. Is there another daemon already listening ?\n");
         exit(EXIT_FAILURE);
