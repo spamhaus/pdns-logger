@@ -19,9 +19,10 @@ static pdns_status_t protobuf_parse(unsigned char *buf, size_t blen) {
     }
     else {
         size_t sz = pbdnsmessage__get_packed_size(msg);
+#ifdef DEBUG
         fprintf(stderr, "Decoded message size %zu\n", sz);
-
-
+#endif
+        pdns_loggers_log(msg);
     }
     /*
         Data in the PROTOBUF PACKET:
@@ -59,33 +60,46 @@ static pdns_status_t protobuf_parse(unsigned char *buf, size_t blen) {
     return PDNS_OK;
 }
 
-static pdns_status_t protobuf_extract(unsigned char *buf, size_t blen) {
+static pdns_status_t protobuf_extract(unsigned char *buf, size_t *blen) {
     uint16_t *pplen, plen;
     unsigned char *pbuf;
 
-    if ( blen < sizeof(uint16_t) ) {
+    if ( *blen < sizeof(uint16_t) ) {
         return PDNS_RETRY;
     }
 
-    fprintf(stderr, "bytes: %d %d\n", *buf, *(buf+1));
+#ifdef DEBUG
+    fprintf(stderr, "bytes: %d %d (over %zu)\n", *buf, *(buf+1), *blen);
+#endif
 
-    pplen = (uint16_t *) buf;
-    plen = ntohs(*pplen);
+    while ( 1 ) {
+        pplen = (uint16_t *) buf;
+        plen = ntohs(*pplen);
 
-    if ( blen - sizeof(uint16_t) >= plen ) {
-        /* Decode is possible */
-        fprintf(stderr, "Decoding (pblen = %d)\n", plen);
-        pbuf = buf+2;
+        if ( *blen >= plen + sizeof(uint16_t)) {
+            /* Decode is possible */
+#ifdef DEBUG
+            fprintf(stderr, "Decoding (pblen = %d)\n", plen);
+#endif
+            pbuf = buf+2;
 
-        if ( protobuf_parse(pbuf, plen) != PDNS_OK ) {
-            return PDNS_NO;
+            protobuf_parse(pbuf, plen);
+            memmove(buf, buf+plen+2, *blen - plen - 2);
+            *blen = *blen - plen - 2;
+
+#ifdef DEBUG
+            fprintf(stderr, "Remaining (blen = %zu)\n", *blen);
+#endif
+            if ( *blen == 0 ) {
+                return PDNS_OK;
+            }
         }
-
-        return PDNS_OK;
-    }
-    else {
-        fprintf(stderr, "Retrying (blen = %zu pblen = %d)\n", blen, plen);
-        return PDNS_RETRY;
+        else {
+#ifdef DEBUG
+            fprintf(stderr, "Retrying (blen = %zu pblen = %d)\n", *blen, plen);
+#endif
+            return PDNS_RETRY;
+        }
     }
 
     return PDNS_OK;
@@ -113,7 +127,9 @@ static void *socket_thread_exec(void *data) {
         int nbytes;
 
         if ( bsize == MAX_BUFFER_SIZE ) {
+#ifdef DEBUG
             fprintf(stderr, "Client buffer full!\n");
+#endif
             /* Buffer full, should not happen. Let's disconnect the client */
             break;
         }
@@ -128,13 +144,15 @@ static void *socket_thread_exec(void *data) {
             break;
         }
         else {
-            pdns_status_t status;
+            pdns_status_t status = PDNS_RETRY;
 
+#ifdef DEBUG
             fprintf(stderr, "bytes: %d %d <\n", *buffer, *(buffer+1));
             fprintf(stderr, "Reading %d bytes from socket, appending at offset %zu\n", nbytes, bsize);
+#endif
             bsize += nbytes;
 
-            status = protobuf_extract(buffer, bsize);
+            status = protobuf_extract(buffer, &bsize);
             if ( status == PDNS_NO ) {
                 break;
             }
@@ -143,7 +161,6 @@ static void *socket_thread_exec(void *data) {
             }
             else if ( status == PDNS_OK ) {
                 /* We should alter the buffer */
-                bsize = 0;
             }
             else {
                 /* Should never happen */
@@ -153,7 +170,9 @@ static void *socket_thread_exec(void *data) {
         }
     }
 
+#ifdef DEBUG
     fprintf(stderr, "Disconnecting client\n");
+#endif
     close(socket);
 
     return NULL;

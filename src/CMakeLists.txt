@@ -18,11 +18,12 @@ SET(SOURCES
     dnsmessage.pb-c.c
     inih/ini.c
 
-    #pdns-logger-file.c
+    pdns-logger-file.c
     #pdns-logger-syslog.c
     #pdns-logger-sqlite.c
 
     pdns-logger-protobuf.c
+    pdns-logger-queue.c
     pdns-logger-ini.c
     pdns-logger.c
 )

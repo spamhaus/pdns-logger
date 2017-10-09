@@ -10,15 +10,45 @@ static globals_t globals;
 /* ************************************************************************ */
 /* ************************************************************************ */
 
-static pdns_status_t loggers_initialize() {
+static int           engines_count = 0;
+static pdns_logger_t engines[3];
+
+pdns_status_t pdns_loggers_log(void *pbm) {
+    int t;
+
+    for ( t=0; t < engines_count; t++ ) {
+        if (engines[t].log != NULL ) {
+            engines[t].log(pbm);
+        }
+    }
+
+    return PDNS_OK;
 }
 
-static pdns_status_t loggers_deinitialize() {
+static pdns_status_t loggers_initialize(const char *conf) {
+    int t;
+    memset(engines, 0, sizeof(engines));
+
+    engines[engines_count++] = logfile_engine;
+
+    for ( t=0; t < engines_count; t++ ) {
+        if (engines[t].start != NULL ) {
+            engines[t].start(conf);
+        }
+    }
+
+    return PDNS_OK;
 }
 
 /* ************************************************************************ */
 /* ************************************************************************ */
 /* ************************************************************************ */
+
+static void signal_rotate(int sig) {
+    (void) sig;
+    fprintf(stderr, "Rotating logfiles...\n");
+    return;
+}
 
 static void signal_stop(int sig) {
     (void) sig;
@@ -82,7 +112,6 @@ static pdns_status_t parse_cli(globals_t *conf, int argc, char **argv) {
 }
 
 int main(int argc, char **argv) {
-
     memset(&globals, 0, sizeof(globals_t));
 
     if ( parse_cli(&globals, argc, argv) != PDNS_OK ) {
@@ -95,16 +124,21 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    signal(SIGPIPE, SIG_IGN);
+    loggers_initialize(globals.config_file);
 
     signal(SIGINT, signal_stop);
+    signal(SIGHUP, SIG_IGN);
+    signal(SIGPIPE, SIG_IGN);
     signal(SIGTERM, signal_stop);
-    signal(SIGKILL, signal_stop);
+    signal(SIGUSR1, signal_rotate);
 
     globals.running = 1;
     if ( pdns_socket_run(&globals) != PDNS_OK ) {
-        assert(0); // TODO LOG
+        fprintf(stderr, "Cannot start the socket process. Is there another daemon already listening ?\n");
+        exit(EXIT_FAILURE);
     }
+
+    fprintf(stderr, "exiting\n");
 
     safe_free(globals.user);
     safe_free(globals.group);

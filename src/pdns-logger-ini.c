@@ -23,13 +23,12 @@ static int opt_handler(void *user, const char *section, const char *name, const 
             globals->bind_port = atoi(value);
         }
         else {
-            fprintf(stderr, "Unmanaged INI option '%s'\n", name);
+            fprintf(stderr, "Unmanaged INI option '%s' at line %d\n", name, lineno);
         }
 
         return 1;
     }
 
-    fprintf(stderr, "%d * %s -> %s -> %s\n", lineno, section, name, value);
 
     return 1;
 }

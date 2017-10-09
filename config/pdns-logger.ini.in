@@ -1,9 +1,19 @@
 
 [globals]
-
 user=nobody
 group=nogroup
 
-bind-ip=*
+bind-ip=127.0.0.1
 bind-port=4242
+
+[syslog]
+ident=pdns-logger
+facility=syslog
+level=debug
+
+[logfile]
+logfile=/var/log/pdns-logger/pdns.log
+
+[sqlite3]
+dbfile=/var/lib/pdns-logger/queries.db
 

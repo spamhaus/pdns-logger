@@ -5,6 +5,9 @@
 #include <unistd.h>
 #include <protobuf-c/protobuf-c.h>
 #include <assert.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 #define PDNS_LOGGER_VERSION 171001
 #define DEFAULT_CONFIG_FILE "@PROJECT_SYSCONF_DIR@" "pdns-logger.ini"
@@ -34,10 +37,16 @@ struct globals_s {
     int socket;
 };
 
-typedef pdns_status_t(*init_function_f)(void);
+typedef struct fifo_s fifo_t;
+fifo_t *fifo_init(void);
+pdns_status_t fifo_push(fifo_t *fifo, void *value);
+void *fifo_pop(fifo_t *fifo);
+
+
+typedef pdns_status_t(*init_function_f)(const char *inifile);
 typedef pdns_status_t(*rotate_function_f)(void);
 typedef pdns_status_t(*stop_function_f)(void);
-typedef pdns_status_t(*log_function_f)(void);
+typedef pdns_status_t(*log_function_f)(void *rawpb);
 
 typedef struct pdns_logger_s pdns_logger_t;
 struct pdns_logger_s {
@@ -47,5 +56,8 @@ struct pdns_logger_s {
     log_function_f      log;
 };
 
+extern pdns_logger_t logfile_engine;
+
 pdns_status_t parse_config_file(const char *cf, globals_t *globals);
 pdns_status_t pdns_socket_run(globals_t *globals);
+pdns_status_t pdns_loggers_log(void *pbm);
