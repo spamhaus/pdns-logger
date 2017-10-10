@@ -6,6 +6,7 @@
 static FILE *fp = NULL;
 static char *file = NULL;
 static int force_flush = 0;
+static char rewrites_only = 1;
 /* static fifo_t *queue = NULL; */
 
 static int opt_handler(void *user, const char *section, const char *name, const char *value, int lineno) {
@@ -20,11 +21,11 @@ static int opt_handler(void *user, const char *section, const char *name, const 
             file = strdup(value);
         } else if (!strncmp(name, "force-flush", sizeof("force-flush"))) {
             force_flush = atoi(value) ? 1 : 0;
+        } else if (!strncmp(name, "only-rewrites", sizeof("only-rewrites"))) {
+            rewrites_only = atoi(value) ? 1 : 0;
         } else {
             fprintf(stderr, "Unmanaged INI option '%s' at line %d\n", name, lineno);
         }
-
-        //fprintf(stderr, "%d * %s -> %s -> %s\n", lineno, section, name, value);
         return 1;
     }
 
@@ -53,7 +54,7 @@ static pdns_status_t logfile_init(const char *inifile) {
        }
      */
 
-    fp = fopen(file, "w+");
+    fp = fopen(file, "a");
     if (fp == NULL) {
         fprintf(stderr, "logfile: cannot open '%s' for writing\n", file);
         return PDNS_NO;
@@ -64,7 +65,7 @@ static pdns_status_t logfile_init(const char *inifile) {
 
 static pdns_status_t logfile_rotate(void) {
     if (fp != NULL) {
-        fp = freopen(file, "w+", fp);
+        fp = freopen(file, "a", fp);
         if (fp == NULL) {
             fprintf(stderr, "logfile: cannot open '%s' for writing\n", file);
             return PDNS_NO;
@@ -84,6 +85,15 @@ static pdns_status_t logfile_stop(void) {
     return PDNS_OK;
 }
 
+#define write_log() \
+    if (fp != NULL) { \
+        fprintf(fp, "%s\n", str); \
+        if (force_flush) { \
+            fflush(fp); \
+        } \
+    }
+//    fprintf(stderr, "%s\n", str);
+
 static pdns_status_t logfile_log(void *rawpb) {
     PBDNSMessage *msg = rawpb;
     PBDNSMessage__DNSQuestion *q;
@@ -96,12 +106,42 @@ static pdns_status_t logfile_log(void *rawpb) {
         return PDNS_OK;
     }
 
+    if (rewrites_only != 0) {
+        if (msg->response != NULL && zstr(msg->response->appliedpolicy)) {
+            return PDNS_OK;
+        }
+    }
+
     sz = sizeof(str) - 1;
 
     if (msg->has_id) {
         pc = snprintf(tmp, sizeof(tmp), "QID: %d ", msg->id);
         strncat(str, tmp, sz);
         sz -= pc;
+    }
+
+    if (msg->has_from) {
+        if (msg->from.len == 4) {
+            char ip[INET6_ADDRSTRLEN];
+
+            inet_ntop(AF_INET, (const void *) msg->from.data, ip, sizeof(ip));
+
+            pc = snprintf(tmp, sizeof(tmp), "from: %s ", ip);
+            strncat(str, tmp, sz);
+            sz -= pc;
+        } else if (msg->from.len == 16) {
+            char ip[INET6_ADDRSTRLEN];
+
+            inet_ntop(AF_INET6, (const void *) msg->from.data, ip, sizeof(ip));
+
+            pc = snprintf(tmp, sizeof(tmp), "from: %s ", ip);
+            strncat(str, tmp, sz);
+            sz -= pc;
+        }
+    }
+
+    if (msg->has_originalrequestorsubnet) {
+        assert(0);
     }
 
     q = msg->question;
@@ -131,13 +171,19 @@ static pdns_status_t logfile_log(void *rawpb) {
             sz -= pc;
         }
 
+        pc = snprintf(tmp, sizeof(tmp), "rrcount: %zu ", r->n_rrs);
+        strncat(str, tmp, sz);
+        sz -= pc;
+
+        if (!zstr(r->appliedpolicy)) {
+            pc = snprintf(tmp, sizeof(tmp), "policy: '%s' ", r->appliedpolicy);
+            strncat(str, tmp, sz);
+            sz -= pc;
+        }
+
         if (r->n_rrs > 0) {
             unsigned int t;
             PBDNSMessage__DNSResponse__DNSRR *rr;
-
-            pc = snprintf(tmp, sizeof(tmp), "rrcount: %zu ", r->n_rrs);
-            strncat(str, tmp, sz);
-            sz -= pc;
 
             for (t = 1; t <= r->n_rrs; t++) {
                 rr = r->rrs[t - 1];
@@ -193,24 +239,14 @@ static pdns_status_t logfile_log(void *rawpb) {
                         sz -= pc;
                     }
                 }
+
+                write_log();
             }
-
-        }
-
-        if (!zstr(r->appliedpolicy)) {
-            pc = snprintf(tmp, sizeof(tmp), "policy: '%s' ", r->appliedpolicy);
-            strncat(str, tmp, sz);
-            sz -= pc;
-        }
-    }
-
-    if (fp != NULL) {
-        fprintf(fp, "%s\n", str);
-        if (force_flush) {
-            fflush(fp);
+        } else {
+            write_log();
         }
     } else {
-        fprintf(stderr, "%s\n", str);
+        write_log();
     }
 
     return PDNS_OK;

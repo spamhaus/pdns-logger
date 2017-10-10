@@ -7,6 +7,7 @@
 
 static char *dbfile = NULL;
 static struct sqlite3 *db = NULL;
+static char rewrites_only = 1;
 
 /* *************************************************************************** */
 /* *************************************************************************** */
@@ -17,6 +18,7 @@ static struct sqlite3 *db = NULL;
 #define SQL_CREATE_TABLE \
     "CREATE TABLE IF NOT EXISTS logs ( " \
     "   ts      INTEGER NOT NULL, " \
+    "   querier VARCHAR(48), " \
     "   id      INTEGER NOT NULL, " \
     "   qtype   VARCHAR(10), " \
     "   qclass  VARCHAR(10), " \
@@ -32,19 +34,19 @@ static struct sqlite3 *db = NULL;
     ")"
 
 // EDNS
-// CLIENT
 
 #define SQL_INSERT \
     "INSERT INTO logs (" \
-    "  ts, id, qtype, qclass, qname, rcode, rcount, rname, rtype, rclass, rttl, rdata, policy " \
+    "  ts, querier, id, qtype, qclass, qname, rcode, rcount, rname, rtype, rclass, rttl, rdata, policy " \
     ") VALUES (" \
-    "  %ld, %d, '%q', '%q', '%q', '%q', %d, '%q', '%q', '%q', %ld, '%q', '%q'  " \
+    "  %ld, '%q', %d, '%q', '%q', '%q', '%q', %d, '%q', '%q', '%q', %ld, '%q', '%q'  " \
     ")"
 
 #define SQL_CREATE_INDEX \
-    "CREATE INDEX IF NOT EXISTS logs_ts_idx    ON  logs(ts);" \
-    "CREATE INDEX IF NOT EXISTS logs_qname_idx ON  logs(qname);" \
-    "CREATE INDEX IF NOT EXISTS logs_policy_idx ON logs(policy);"
+    "CREATE INDEX IF NOT EXISTS logs_ts_idx      ON  logs(ts);" \
+    "CREATE INDEX IF NOT EXISTS logs_querier_idx ON  logs(querier);" \
+    "CREATE INDEX IF NOT EXISTS logs_qname_idx   ON  logs(qname);" \
+    "CREATE INDEX IF NOT EXISTS logs_policy_idx  ON logs(policy);"
 
 /* *INDENT-ON* */
 
@@ -108,6 +110,8 @@ static int opt_handler(void *user, const char *section, const char *name, const 
     if (!strncmp(section, "sqlite3", sizeof("sqlite3"))) {
         if (!strncmp(name, "dbfile", sizeof("dbfile"))) {
             dbfile = strdup(value);
+        } else if (!strncmp(name, "only-rewrites", sizeof("only-rewrites"))) {
+            rewrites_only = atoi(value) ? 1 : 0;
         } else {
             fprintf(stderr, "Unmanaged INI option '%s' at line %d\n", name, lineno);
         }
@@ -147,6 +151,26 @@ static pdns_status_t logsqlite_stop(void) {
     return db_close();
 }
 
+/* *INDENT-OFF* */
+#define prepare_sql() \
+    sql = sqlite3_mprintf(SQL_INSERT, \
+        ts, \
+        !zstr(from) ? from : "", \
+        msgid, \
+        qtype ? qtype : "", \
+        qclass ? qclass : "", \
+        qname ? qname : "", \
+        rcode ? rcode : "", \
+        rcount, \
+        rname ? rname : "", \
+        rtype ? rtype : "", \
+        rclass ? rclass : "", \
+        rttl, \
+        rdata ? rdata : "", \
+        policy ? policy : "" \
+    );
+/* *INDENT-ON* */
+
 static pdns_status_t logsqlite_log(void *rawpb) {
     char *sql = NULL;
     char ip4[INET6_ADDRSTRLEN];
@@ -155,6 +179,7 @@ static pdns_status_t logsqlite_log(void *rawpb) {
     PBDNSMessage__DNSQuestion *q;
     PBDNSMessage__DNSResponse *r;
     int ts = 0;
+    char from[INET6_ADDRSTRLEN] = "";
     int msgid = 0;
     const char *qtype = NULL;
     const char *qclass = NULL;
@@ -172,12 +197,26 @@ static pdns_status_t logsqlite_log(void *rawpb) {
         return PDNS_OK;
     }
 
-    if (msg->has_id) {
-        msgid = msg->id;
+    if (rewrites_only != 0) {
+        if (msg->response != NULL && zstr(msg->response->appliedpolicy)) {
+            return PDNS_OK;
+        }
     }
 
     if (msg->has_timesec) {
         ts = msg->timesec;
+    }
+
+    if (msg->has_from) {
+        if (msg->from.len == 4) {
+            inet_ntop(AF_INET, (const void *) msg->from.data, from, sizeof(from));
+        } else if (msg->from.len == 16) {
+            inet_ntop(AF_INET6, (const void *) msg->from.data, from, sizeof(from));
+        }
+    }
+
+    if (msg->has_id) {
+        msgid = msg->id;
     }
 
     q = msg->question;
@@ -203,11 +242,12 @@ static pdns_status_t logsqlite_log(void *rawpb) {
             policy = r->appliedpolicy;
         }
 
+        rcount = r->n_rrs;
+
         if (r->n_rrs > 0) {
             unsigned int t;
             PBDNSMessage__DNSResponse__DNSRR *rr;
 
-            rcount = r->n_rrs;
             for (t = 1; t <= r->n_rrs; t++) {
                 rr = r->rrs[t - 1];
                 rname = rr->name;
@@ -237,32 +277,20 @@ static pdns_status_t logsqlite_log(void *rawpb) {
                         rdata = "[Not Supported]";
                     }
                 }
-
+                prepare_sql();
+                db_exec(sql, 1);
+                sqlite3_free(sql);
             }
         } else {
+            prepare_sql();
+            db_exec(sql, 1);
+            sqlite3_free(sql);
         }
-
+    } else {
+        prepare_sql();
+        db_exec(sql, 1);
+        sqlite3_free(sql);
     }
-/* *INDENT-OFF* */
-    sql = sqlite3_mprintf(SQL_INSERT,
-        ts,
-        msgid,
-        qtype,
-        qclass,
-        qname,
-        rcode,
-        rcount,
-        rname,
-        rtype,
-        rclass,
-        rttl,
-        rdata ? rdata : "",
-        policy ? policy : ""
-    );
-/* *INDENT-ON* */
-
-    fprintf(stderr, "%s\n", sql);
-    sqlite3_free(sql);
 
     return PDNS_OK;
 }

@@ -19,8 +19,6 @@ SET(SOURCES
     inih/ini.c
 
     pdns-logger-file.c
-    #pdns-logger-syslog.c
-
     pdns-logger-protobuf.c
     pdns-logger-queue.c
     pdns-logger-dns.c

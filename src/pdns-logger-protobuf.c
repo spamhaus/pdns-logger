@@ -23,36 +23,6 @@ static pdns_status_t protobuf_parse(unsigned char *buf, size_t blen) {
 #endif
         pdns_loggers_log(msg);
     }
-    /*
-       Data in the PROTOBUF PACKET:
-       messageid
-       serveridentity
-       socketfamily
-       socketprotocol
-       from
-       to
-       inbytes
-       timesec
-       timeusec
-       id
-       requestorid
-       initialrequestid
-       originalrequestorsubnet
-       question
-       qtype
-       qclass
-       qname
-       response
-       rcode
-       rrs (array)
-       type
-       class
-       ttl
-       rdata
-       type
-       data
-       appliedpolicy
-     */
 
     pbdnsmessage__free_unpacked(msg, NULL);
 
@@ -206,7 +176,7 @@ static pdns_status_t socket_loop(globals_t * conf) {
                     new = accept(conf->socket, (struct sockaddr *) &client_sa, (socklen_t *) & size);
 
                     if (new < 0) {
-                        // TODO ERROR;
+                        fprintf(stderr, "Cannot accept connection from client.\n");
                     } else {
                         fprintf(stderr, "Connection from host %s, port %d.\n", inet_ntoa(client_sa.sin_addr), ntohs(client_sa.sin_port));
                         socket_start_thread(new);
