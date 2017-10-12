@@ -1,3 +1,18 @@
+/*
+ * Powerdns logger daemon
+ * ----------------------
+ *
+ * This Source Code Form is subject to the terms of the
+ * Mozilla Public License, v. 2.0.
+ * If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Copyright (C) 2017, Spamhaus Technology Ltd, London
+ *
+ * The Initial developer of the Original code is:
+ * Massimo Cetra
+ *
+ */
 
 #include <pthread.h>
 #include "pdns-logger.h"
