@@ -1,3 +1,10 @@
 build/
 
-#debian/
+debian/tmp/
+debian/pdns-logger/
+
+debian/files
+debian/*.debhelper.log
+debian/*.debhelper
+debian/*.substvars
+
