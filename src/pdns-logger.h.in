@@ -17,6 +17,7 @@
 typedef enum pdns_status_e {
     PDNS_NO,
     PDNS_OK,
+    PDNS_FORK,
     PDNS_RETRY
 } pdns_status_t;
 

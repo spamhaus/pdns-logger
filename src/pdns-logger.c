@@ -94,7 +94,7 @@ static pdns_status_t fork_and_close_parent(void) {
 
     (void) filed;               /* To remove nasty warnings! */
 
-    return PDNS_OK;
+    return PDNS_FORK;
 }
 
 /*
@@ -210,7 +210,19 @@ int main(int argc, char **argv) {
 */
 
     if ( !globals.foreground ) {
-        fork_and_close_parent();
+        pdns_status_t status;
+        status = fork_and_close_parent();
+
+        if ( status == PDNS_OK ) {
+            exit(EXIT_SUCCESS);
+        }
+        else if ( status == PDNS_FORK ) {
+            /* Properly forked, we're the backfround child. */
+        }
+        else {
+            fprintf(stderr, "Cannot fork and push the process to background.");
+            exit(EXIT_FAILURE);
+        }
     }
 
     globals.running = 1;
