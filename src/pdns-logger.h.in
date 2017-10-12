@@ -32,6 +32,8 @@ struct globals_s {
     char *bind_ip;
     int  bind_port;
 
+    char allow_root;
+
     char running;
     char foreground;
     char verbose;

@@ -10,14 +10,18 @@ static int opt_handler(void *user, const char *section, const char *name, const 
     }
 
     if (!strncmp(section, "globals", sizeof("globals"))) {
-        if (!strncmp(name, "user", sizeof("user"))) {
-            globals->user = strdup(value);
-        } else if (!strncmp(name, "group", sizeof("group"))) {
-            globals->group = strdup(value);
-        } else if (!strncmp(name, "bind-ip", sizeof("bind-ip"))) {
+        if (!strncmp(name, "bind-ip", sizeof("bind-ip"))) {
             globals->bind_ip = strdup(value);
         } else if (!strncmp(name, "bind-port", sizeof("bind-port"))) {
             globals->bind_port = atoi(value);
+        } else if (!strncmp(name, "allow-root", sizeof("allow-root"))) {
+            globals->allow_root = atoi(value) ? 1 : 0;
+        /*
+        } else if (!strncmp(name, "user", sizeof("user"))) {
+            globals->user = strdup(value);
+        } else if (!strncmp(name, "group", sizeof("group"))) {
+            globals->group = strdup(value);
+        */
         } else {
             fprintf(stderr, "Unmanaged INI option '%s' at line %d\n", name, lineno);
         }

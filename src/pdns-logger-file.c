@@ -91,8 +91,8 @@ static pdns_status_t logfile_stop(void) {
         if (force_flush) { \
             fflush(fp); \
         } \
-    }
-//    fprintf(stderr, "%s\n", str);
+    } \
+    fprintf(stderr, "%s\n", str);
 
 static pdns_status_t logfile_log(void *rawpb) {
     PBDNSMessage *msg = rawpb;

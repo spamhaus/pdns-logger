@@ -1,3 +1,18 @@
+/*
+ * Powerdns logger daemon
+ * ----------------------
+ *
+ * This Source Code Form is subject to the terms of the
+ * Mozilla Public License, v. 2.0.
+ * If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Copyright (C) 2017, Spamhaus Technology Ltd, London
+ *
+ * The Initial developer of the Original code is:
+ * Massimo Cetra
+ *
+ */
 
 #include <ctype.h>
 #include <signal.h>
@@ -56,12 +71,14 @@ static pdns_status_t loggers_initialize(const char *conf) {
 /* ************************************************************************ */
 /* ************************************************************************ */
 
+/*
 static void signal_rotate(int sig) {
     (void) sig;
     fprintf(stderr, "Rotating logfiles...\n");
     pdns_loggers_rotate();
     return;
 }
+*/
 
 static void signal_stop(int sig) {
     (void) sig;
@@ -124,25 +141,44 @@ static pdns_status_t parse_cli(globals_t * conf, int argc, char **argv) {
 }
 
 int main(int argc, char **argv) {
+    sighandler_t sret;
+
     memset(&globals, 0, sizeof(globals_t));
 
     if (parse_cli(&globals, argc, argv) != PDNS_OK) {
         fprintf(stderr, "Error parsing cli options. Exiting.\n");
-        return 1;
+        exit(EXIT_FAILURE);
     }
 
     if (parse_config_file(globals.config_file, &globals) != PDNS_OK) {
         fprintf(stderr, "Error parsing config file. Exiting.\n");
-        return 1;
+        exit(EXIT_FAILURE);
     }
+
+    if ( !globals.allow_root ) {
+        uid_t current_uid = getuid();
+
+        if (current_uid == 0) {
+            fprintf(stderr, "Please don't start this program as root.\n");
+            exit(EXIT_FAILURE);
+        }
+    }
+
 
     loggers_initialize(globals.config_file);
 
-    signal(SIGINT, signal_stop);
-    signal(SIGHUP, SIG_IGN);
-    signal(SIGPIPE, SIG_IGN);
-    signal(SIGTERM, signal_stop);
-    signal(SIGHUP, signal_rotate);
+    sret = signal(SIGINT, signal_stop);
+    assert(sret != SIG_ERR);
+/*
+    sret = signal(SIGHUP, SIG_IGN);
+    assert(sret != SIG_ERR);
+    sret = signal(SIGPIPE, SIG_IGN);
+    assert(sret != SIG_ERR);
+    sret = signal(SIGTERM, signal_stop);
+    assert(sret != SIG_ERR);
+    sret = signal(SIGHUP, signal_rotate);
+    assert(sret != SIG_ERR);
+*/
 
     globals.running = 1;
 
