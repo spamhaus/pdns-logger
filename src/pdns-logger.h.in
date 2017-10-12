@@ -33,9 +33,9 @@ struct globals_s {
     int  bind_port;
 
     char allow_root;
+    char foreground;
 
     char running;
-    char foreground;
     char verbose;
 
     int socket;

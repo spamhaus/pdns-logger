@@ -71,6 +71,32 @@ static pdns_status_t loggers_initialize(const char *conf) {
 /* ************************************************************************ */
 /* ************************************************************************ */
 
+static pdns_status_t fork_and_close_parent(void) {
+    FILE *filed;
+    pid_t pid = 0;
+    pid_t sid;
+
+    if ((pid = fork())) {
+        fprintf(stderr, "Going to background (PID: %d)\n", (int) pid);
+        return PDNS_OK;
+    }
+
+    /* Create a new SID for the child process */
+    sid = setsid();
+    if (sid < 0) {
+        fprintf(stderr, "Cannot setsid() the child process\n");
+        return PDNS_NO;
+    }
+
+    filed = freopen("/dev/null", "r", stdin);
+    filed = freopen("/dev/null", "w", stdout);
+    filed = freopen("/dev/null", "w", stderr);
+
+    (void) filed;               /* To remove nasty warnings! */
+
+    return PDNS_OK;
+}
+
 /*
 static void signal_rotate(int sig) {
     (void) sig;
@@ -100,7 +126,7 @@ static pdns_status_t parse_cli(globals_t * conf, int argc, char **argv) {
                 printf("  -c configfile       Location of the config file (default: %s)\n", DEFAULT_CONFIG_FILE);
                 printf("  -f                  Do not fork and stay in foreground\n");
                 printf("  -h                  Print this message and exit.\n");
-                printf("  -v                  Verbose mode, display config options and stats\n");
+                //printf("  -v                  Verbose mode, display config options and stats\n");
                 printf("\n");
                 return PDNS_OK;
                 break;
@@ -150,8 +176,12 @@ int main(int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
+    if ( zstr(globals.config_file) ) {
+        globals.config_file = strdup(DEFAULT_CONFIG_FILE);
+    }
+
     if (parse_config_file(globals.config_file, &globals) != PDNS_OK) {
-        fprintf(stderr, "Error parsing config file. Exiting.\n");
+        fprintf(stderr, "Error parsing config file ('%s'). Exiting.\n", globals.config_file ? globals.config_file : "not set");
         exit(EXIT_FAILURE);
     }
 
@@ -163,7 +193,6 @@ int main(int argc, char **argv) {
             exit(EXIT_FAILURE);
         }
     }
-
 
     loggers_initialize(globals.config_file);
 
@@ -179,6 +208,10 @@ int main(int argc, char **argv) {
     sret = signal(SIGHUP, signal_rotate);
     assert(sret != SIG_ERR);
 */
+
+    if ( !globals.foreground ) {
+        fork_and_close_parent();
+    }
 
     globals.running = 1;
 

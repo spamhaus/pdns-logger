@@ -16,6 +16,8 @@ static int opt_handler(void *user, const char *section, const char *name, const 
             globals->bind_port = atoi(value);
         } else if (!strncmp(name, "allow-root", sizeof("allow-root"))) {
             globals->allow_root = atoi(value) ? 1 : 0;
+        } else if (!strncmp(name, "foreground", sizeof("foreground"))) {
+            globals->foreground = atoi(value) ? 1 : 0;
         /*
         } else if (!strncmp(name, "user", sizeof("user"))) {
             globals->user = strdup(value);

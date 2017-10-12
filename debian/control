@@ -3,8 +3,9 @@ Section: net
 Priority: extra
 Maintainer: MC <mc@spamteq.com>
 Build-Depends: cdbs (>= 0.4.23-1.1), debhelper (>= 5), devscripts, cmake, build-essential, pkg-config,
-    libprotobuf-c-dev, libsqlite3-dev, libsystemd-dev
+    libprotobuf-c-dev, libsqlite3-dev
 Standards-Version: 3.9.8
+#, libsystemd-dev
 
 Package: pdns-logger
 Architecture: any

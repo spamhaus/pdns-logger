@@ -6,7 +6,7 @@
 
 [globals]
 allow-root=0
-
+foreground=0
 bind-ip=127.0.0.1
 bind-port=4242
 
