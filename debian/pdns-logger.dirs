@@ -1,0 +1,4 @@
+etc/pdns-logger
+usr/sbin
+var/lib/pdns-logger
+var/log/pdns-logger

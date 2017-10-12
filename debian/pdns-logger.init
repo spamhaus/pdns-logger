@@ -1,0 +1,72 @@
+#!/bin/sh
+
+# Start or stop PDNS-LOGGER
+
+### BEGIN INIT INFO
+# Provides:          pdns-logger
+# Required-Start:    $local_fs $remote_fs $syslog $network
+# Required-Stop:     $local_fs $remote_fs $syslog $network
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start and Stop the pdns-logger daemon.
+### END INIT INFO
+
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
+NAME=pdns-logger
+DESC="PowerDNS Logger"
+PIDFILE="/var/run/$NAME.pid"
+DAEMON="/usr/sbin/pdns-logger"
+
+# by default: no params
+PDNS_LOGGER_USER=pdns
+PDNS_LOGGER_PARAMETERS=""
+PDNS_LOGGER_START="yes"
+
+if [ -r /etc/default/$NAME ]; then . /etc/default/$NAME; fi
+
+if [ "$PDNS_LOGGER_START" != "yes" ];then
+	echo "$DESC not yet configured. Edit /etc/default/$NAME first."
+	exit 0
+fi
+
+test -x $DAEMON || exit 0
+
+set -e
+
+case "$1" in
+  start)
+	echo -n "Starting $DESC: "
+	start-stop-daemon --chuid $PDNS_LOGGER_USER --start --pidfile "$PIDFILE" --exec $DAEMON -- $PDNS_LOGGER_PARAMETERS
+	echo "$NAME."
+	;;
+  stop)
+	echo -n "Stopping $DESC: "
+	start-stop-daemon --stop --quiet --oknodo --signal=TERM --exec $DAEMON
+	sleep 3
+	start-stop-daemon --stop --quiet --oknodo --retry=0/2/2/KILL/5 --exec $DAEMON
+	echo -n "$NAME"
+	echo "."
+	;;
+  rotate)
+	start-stop-daemon --stop --quiet --oknodo --signal=HUP --exec $DAEMON
+	;;
+  reload)
+	start-stop-daemon --stop --quiet --oknodo --signal=HUP --exec $DAEMON
+	;;
+  force-reload)
+	$0 stop
+	$0 start
+	;;
+  restart)
+	$0 stop
+	$0 start
+	;;
+  *)
+	N=/etc/init.d/$NAME
+	echo "Usage: $N {start|stop|restart|force-reload|reload|rotate}" >&2
+	exit 1
+	;;
+esac
+
+exit 0

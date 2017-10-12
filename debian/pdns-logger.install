@@ -1,0 +1,2 @@
+debian/tmp/etc/pdns-logger/pdns-logger.ini
+debian/tmp/usr/sbin/pdns-logger

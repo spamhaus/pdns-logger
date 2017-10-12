@@ -1,0 +1,15 @@
+Source: pdns-logger
+Section: net
+Priority: extra
+Maintainer: MC <mc@spamteq.com>
+Build-Depends: cdbs (>= 0.4.23-1.1), debhelper (>= 5), devscripts, cmake, build-essential, pkg-config,
+    libprotobuf-c-dev, libsqlite3-dev, libsystemd-dev
+Standards-Version: 3.9.8
+
+Package: pdns-logger
+Architecture: any
+Depends: lsb-base, ${shlibs:Depends}, ${misc:Depends}
+Suggests: pdns-recursor (>= 4.0.4)
+Description: SpamTeq Powernd-recursor Logger
+ Basic logger for the PowerDNS recursor protobuf socket
+
