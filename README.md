@@ -1,17 +1,36 @@
 PDNS-LOGGER
 ===========
 
-** bold text **
-
-Introduction
-------------
+** pdns-logger ** is a small daemon that leverages the protobufServer feature of Powerdns Recursor
+to log the queries to syslog, to a file (optional) and to an sqlite3 database.
 
 Use cases
 ---------
 
+The program was written to debug RPZ rewrites in an easy way.
+This code is not meant to parse heavy query streams. However, the code is threaded and all the major
+building blocks to support big numbers of queries per second are already available.
+
 Installation
 ------------
 
+To compile pdns-logger, you need [cmake](https://cmake.org/).
+Other required libraries are:
+- [protobuf-c](https://github.com/protobuf-c/protobuf-c)
+- [sqlite3](https://www.sqlite.org/)
+
+Checkout the Github code and then
+```bash
+mkdir -p  build
+cd build
+    cmake ../ \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX="/usr/" \
+        -DSYSCONF_INSTALL_DIR="/etc"
+
+make
+make install
+```
 
 
 PACKAGE DEPENDENCIES
