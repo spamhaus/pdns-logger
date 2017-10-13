@@ -98,14 +98,14 @@ static pdns_status_t fork_and_close_parent(void) {
 }
 
 /*
+*/
 static void signal_rotate(int sig) {
     (void) sig;
     fprintf(stderr, "Rotating logfiles...\n");
     pdns_loggers_rotate();
     return;
 }
-*/
-
+/*
 static void signal_stop(int sig) {
     (void) sig;
 
@@ -113,11 +113,12 @@ static void signal_stop(int sig) {
 
     return;
 }
+*/
 
 static pdns_status_t parse_cli(globals_t * conf, int argc, char **argv) {
     int c;
 
-    while ((c = getopt(argc, argv, "hvc:f:")) != -1) {
+    while ((c = getopt(argc, argv, "hvc:f")) != -1) {
         switch (c) {
             case 'h':
                 printf("\n");
@@ -167,8 +168,6 @@ static pdns_status_t parse_cli(globals_t * conf, int argc, char **argv) {
 }
 
 int main(int argc, char **argv) {
-    sighandler_t sret;
-
     memset(&globals, 0, sizeof(globals_t));
 
     if (parse_cli(&globals, argc, argv) != PDNS_OK) {
@@ -190,24 +189,20 @@ int main(int argc, char **argv) {
 
         if (current_uid == 0) {
             fprintf(stderr, "Please don't start this program as root.\n");
-            exit(EXIT_FAILURE);
+            //exit(EXIT_FAILURE);
         }
     }
 
     loggers_initialize(globals.config_file);
 
-    sret = signal(SIGINT, signal_stop);
-    assert(sret != SIG_ERR);
 /*
-    sret = signal(SIGHUP, SIG_IGN);
-    assert(sret != SIG_ERR);
-    sret = signal(SIGPIPE, SIG_IGN);
-    assert(sret != SIG_ERR);
-    sret = signal(SIGTERM, signal_stop);
-    assert(sret != SIG_ERR);
-    sret = signal(SIGHUP, signal_rotate);
-    assert(sret != SIG_ERR);
+    signal(SIGINT, signal_stop);
+    signal(SIGHUP, SIG_IGN);
+    signal(SIGPIPE, SIG_IGN);
+    signal(SIGTERM, signal_stop);
+    signal(SIGHUP, signal_rotate);
 */
+    signal(SIGHUP, signal_rotate);
 
     if ( !globals.foreground ) {
         pdns_status_t status;
@@ -232,7 +227,7 @@ int main(int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
-    fprintf(stderr, "exiting\n");
+    fprintf(stderr, "Terminating...\n");
 
     safe_free(globals.user);
     safe_free(globals.group);

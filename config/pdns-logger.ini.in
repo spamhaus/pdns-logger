@@ -1,14 +1,14 @@
-# Please add something like this:
-#  protobufServer("127.0.0.1:4242", 2, 100, 1, 32, 128, false, true)
-# to the LUA configuration file of the recursor.
-# Note that the last parameter is supported only in 4.1.0 or later.
-# Remove it if you're using a previous version of the recursor
+; Please add something like this:
+;  protobufServer("127.0.0.1:4242", 2, 100, 1, 32, 128, false, true)
+; to the LUA configuration file of the recursor.
+; Note that the last parameter is supported only in 4.1.0 or later.
+; Remove it if you're using a previous version of the recursor
 
 [globals]
 allow-root=0
-foreground=0
 bind-ip=127.0.0.1
 bind-port=4242
+;foreground=0            ; If set, this will override the CLI -f option
 
 [syslog]
 ident=pdns-logger
@@ -24,9 +24,8 @@ force-flush=1
 only-rewrites=0
 dbfile=/var/lib/pdns-logger/queries.db
 
-# NOTES:
-#
-# When configuring the recursor with the protobufServer() function, the taggedOnly parameter
-# works only for 4.1.0 and later versions. This will affect the logger setting 'only-rewrites'
-# which will become basically useless.
-#
+; NOTES:
+;
+; When configuring the recursor with the protobufServer() function, the taggedOnly parameter
+; works only for 4.1.0 and later versions. This will affect the logger setting 'only-rewrites'
+; which will become basically useless.
