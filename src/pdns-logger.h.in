@@ -76,6 +76,7 @@ struct pdns_logger_s {
 };
 
 extern pdns_logger_t logfile_engine;
+extern pdns_logger_t syslog_engine;
 extern pdns_logger_t sqlite_engine;
 
 pdns_status_t parse_config_file(const char *cf, globals_t *globals);

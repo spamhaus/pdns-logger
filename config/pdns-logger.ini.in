@@ -11,9 +11,9 @@ bind-port=4242
 ;foreground=0            ; If set, this will override the CLI -f option
 
 [syslog]
+only-rewrites=0
 ident=pdns-logger
 facility=syslog
-level=debug
 
 [logfile]
 only-rewrites=0

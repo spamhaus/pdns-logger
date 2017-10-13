@@ -56,6 +56,7 @@ static pdns_status_t loggers_initialize(const char *conf) {
     memset(engines, 0, sizeof(engines));
 
     engines[engines_count++] = logfile_engine;
+    engines[engines_count++] = syslog_engine;
     engines[engines_count++] = sqlite_engine;
 
     for (t = 0; t < engines_count; t++) {

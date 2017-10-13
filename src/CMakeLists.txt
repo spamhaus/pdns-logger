@@ -18,6 +18,7 @@ SET(SOURCES
     dnsmessage.pb-c.c
     inih/ini.c
 
+    pdns-logger-syslog.c
     pdns-logger-file.c
     pdns-logger-protobuf.c
     pdns-logger-queue.c
