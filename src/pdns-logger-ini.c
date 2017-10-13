@@ -33,12 +33,12 @@ static int opt_handler(void *user, const char *section, const char *name, const 
             globals->allow_root = atoi(value) ? 1 : 0;
         } else if (!strncmp(name, "foreground", sizeof("foreground"))) {
             globals->foreground = atoi(value) ? 1 : 0;
-        /*
-        } else if (!strncmp(name, "user", sizeof("user"))) {
-            globals->user = strdup(value);
-        } else if (!strncmp(name, "group", sizeof("group"))) {
-            globals->group = strdup(value);
-        */
+            /*
+               } else if (!strncmp(name, "user", sizeof("user"))) {
+               globals->user = strdup(value);
+               } else if (!strncmp(name, "group", sizeof("group"))) {
+               globals->group = strdup(value);
+             */
         } else {
             fprintf(stderr, "Unmanaged INI option '%s' at line %d\n", name, lineno);
         }

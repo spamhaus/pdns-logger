@@ -67,6 +67,18 @@ static pdns_status_t loggers_initialize(const char *conf) {
     return PDNS_OK;
 }
 
+static pdns_status_t loggers_halt(void) {
+    int t;
+
+    for (t = 0; t < engines_count; t++) {
+        if (engines[t].stop != NULL) {
+            engines[t].stop();
+        }
+    }
+
+    return PDNS_OK;
+}
+
 /* ************************************************************************ */
 /* ************************************************************************ */
 /* ************************************************************************ */
@@ -97,15 +109,13 @@ static pdns_status_t fork_and_close_parent(void) {
     return PDNS_FORK;
 }
 
-/*
-*/
 static void signal_rotate(int sig) {
     (void) sig;
     fprintf(stderr, "Rotating logfiles...\n");
     pdns_loggers_rotate();
     return;
 }
-/*
+
 static void signal_stop(int sig) {
     (void) sig;
 
@@ -113,7 +123,6 @@ static void signal_stop(int sig) {
 
     return;
 }
-*/
 
 static pdns_status_t parse_cli(globals_t * conf, int argc, char **argv) {
     int c;
@@ -175,7 +184,7 @@ int main(int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
-    if ( zstr(globals.config_file) ) {
+    if (zstr(globals.config_file)) {
         globals.config_file = strdup(DEFAULT_CONFIG_FILE);
     }
 
@@ -184,7 +193,7 @@ int main(int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
-    if ( !globals.allow_root ) {
+    if (!globals.allow_root) {
         uid_t current_uid = getuid();
 
         if (current_uid == 0) {
@@ -195,26 +204,20 @@ int main(int argc, char **argv) {
 
     loggers_initialize(globals.config_file);
 
-/*
     signal(SIGINT, signal_stop);
-    signal(SIGHUP, SIG_IGN);
-    signal(SIGPIPE, SIG_IGN);
     signal(SIGTERM, signal_stop);
-    signal(SIGHUP, signal_rotate);
-*/
+    signal(SIGPIPE, SIG_IGN);
     signal(SIGHUP, signal_rotate);
 
-    if ( !globals.foreground ) {
+    if (!globals.foreground) {
         pdns_status_t status;
         status = fork_and_close_parent();
 
-        if ( status == PDNS_OK ) {
+        if (status == PDNS_OK) {
             exit(EXIT_SUCCESS);
-        }
-        else if ( status == PDNS_FORK ) {
+        } else if (status == PDNS_FORK) {
             /* Properly forked, we're the backfround child. */
-        }
-        else {
+        } else {
             fprintf(stderr, "Cannot fork and push the process to background.");
             exit(EXIT_FAILURE);
         }
@@ -226,6 +229,8 @@ int main(int argc, char **argv) {
         fprintf(stderr, "Cannot start the socket process. Is there another daemon already listening ?\n");
         exit(EXIT_FAILURE);
     }
+
+    loggers_halt();
 
     fprintf(stderr, "Terminating...\n");
 
