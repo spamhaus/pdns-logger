@@ -11,8 +11,8 @@ package:debian:
         - rm -rf artifacts && mkdir -p artifacts
         - mv ../pdns-logger*.changes artifacts/
         - mv ../pdns-logger*.deb artifacts/
-        - mv ../pdns-logger*.dsc artifacts/
         - mv ../pdns-logger*.tar.gz artifacts/
+        #- mv ../pdns-logger*.dsc artifacts/
         #- mv ../pdns-logger*.buildinfo artifacts/
     artifacts:
         paths:
