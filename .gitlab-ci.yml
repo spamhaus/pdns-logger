@@ -15,6 +15,7 @@ package:debian:
         #- mv ../pdns-logger*.dsc artifacts/
         #- mv ../pdns-logger*.buildinfo artifacts/
     artifacts:
+        expire_in: 1 month
         paths:
             - artifacts/*
     tags:
