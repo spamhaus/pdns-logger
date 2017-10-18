@@ -1,0 +1,25 @@
+stages:
+    - build
+
+package:debian:
+    stage:
+        -build
+    before_script:
+        - apt-get update
+        - apt-get -y install cdbs debhelper devscripts cmake build-essential pkg-config libprotobuf-c-dev libsqlite3-dev libsystemd-dev
+    script:
+        - dpkg-buildpackage -uc -us -b
+        - rm -rf artifacts && mkdir -p artifacts
+        - mv ../pdns-logger*.buildinfo artifacts/
+        - mv ../pdns-logger*.changes artifacts/
+        - mv ../pdns-logger*.deb artifacts/
+        - mv ../pdns-logger*.dsc artifacts/
+        - mv ../pdns-logger*.tar.gz artifacts/
+    artifacts:
+        paths:
+            - artifacts/*
+    tags:
+        - ubuntu
+
+#    only:
+#        - tags
