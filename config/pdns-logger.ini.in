@@ -17,7 +17,7 @@ ident=pdns-logger
 facility=syslog
 
 [logfile]
-disabled = 0
+disabled = 1
 only-rewrites=0
 logfile=/var/log/pdns-logger/pdns.log
 force-flush=1
