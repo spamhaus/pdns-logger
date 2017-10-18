@@ -14,6 +14,7 @@
  *
  */
 
+#include <pthread.h>
 #include <sqlite3.h>
 
 #include "inih/ini.h"
@@ -23,6 +24,10 @@
 static char *dbfile = NULL;
 static struct sqlite3 *db = NULL;
 static char rewrites_only = 1;
+static fifo_t *fifo = NULL;
+static pthread_t bgthread;
+static char bgrunning = 0;
+static char disabled = 0;
 
 /* *************************************************************************** */
 /* *************************************************************************** */
@@ -69,9 +74,14 @@ static char rewrites_only = 1;
 /* *************************************************************************** */
 /* *************************************************************************** */
 
+static pdns_status_t db_flush(void);
+
+static int counter = 0;
 static pdns_status_t db_exec(const char *sql, char log) {
     int res;
     char *zErr = NULL;
+
+    counter++;
 
     res = sqlite3_exec(db, sql, NULL, NULL, &zErr);
     if (res != 0) {
@@ -84,9 +94,24 @@ static pdns_status_t db_exec(const char *sql, char log) {
         return PDNS_NO;
     }
 
+    /* From time to time, flush the tables... */
+    if (counter >= 50) {
+        counter = 0;
+        db_flush();
+    }
+
     if (zErr != NULL) {
         sqlite3_free(zErr);
     }
+
+    return PDNS_OK;
+}
+
+static pdns_status_t db_flush(void) {
+    if (!sqlite3_get_autocommit(db)) {
+        db_exec("COMMIT", 1);
+    }
+    db_exec("BEGIN", 1);
 
     return PDNS_OK;
 }
@@ -103,11 +128,45 @@ static pdns_status_t db_open(const char *file) {
     db_exec(SQL_CREATE_TABLE, 1);
     db_exec(SQL_CREATE_INDEX, 1);
 
+    db_flush();
+
     return PDNS_OK;
 }
 
 static pdns_status_t db_close(void) {
     sqlite3_close(db);
+    return PDNS_OK;
+}
+
+/* *************************************************************************** */
+/* *************************************************************************** */
+/* *************************************************************************** */
+
+static void *bg_thread_exec(void *data) {
+    char *sql;
+
+    (void) data;
+
+    bgrunning = 1;
+
+    while (bgrunning) {
+        sql = fifo_pop_item(fifo);
+        if (sql != NULL) {
+            db_exec(sql, 1);
+            sqlite3_free(sql);
+        }
+    }
+    return NULL;
+}
+
+static void bg_thread_stop(void) {
+    bgrunning = 0;
+    pthread_join(bgthread, NULL);
+    return;
+}
+
+static pdns_status_t bg_thread_start(void) {
+    pthread_create(&bgthread, NULL, &bg_thread_exec, NULL);
     return PDNS_OK;
 }
 
@@ -127,6 +186,8 @@ static int opt_handler(void *user, const char *section, const char *name, const 
             dbfile = strdup(value);
         } else if (!strncmp(name, "only-rewrites", sizeof("only-rewrites"))) {
             rewrites_only = atoi(value) ? 1 : 0;
+        } else if (!strncmp(name, "disabled", sizeof("disabled"))) {
+            disabled = atoi(value) ? 1 : 0;
         } else {
             fprintf(stderr, "Unmanaged INI option '%s' at line %d\n", name, lineno);
         }
@@ -146,23 +207,34 @@ static pdns_status_t logsqlite_init(const char *inifile) {
         return PDNS_NO;
     }
 
+    if (disabled) {
+        fprintf(stderr, "logsqlite: Disabled according to configuration\n");
+        return PDNS_OK;
+    }
+
     if (zstr(dbfile)) {
         fprintf(stderr, "logsqlite: DB file is not set\n");
         return PDNS_NO;
     }
+
+    fifo = fifo_init();
+    bg_thread_start();
 
     return db_open(dbfile);
 }
 
 static pdns_status_t logsqlite_rotate(void) {
     if (db != NULL) {
+        fifo_lock(fifo);
         db_close();
         db_open(dbfile);
+        fifo_unlock(fifo);
     }
     return PDNS_OK;
 }
 
 static pdns_status_t logsqlite_stop(void) {
+    bg_thread_stop();
     return db_close();
 }
 
@@ -207,6 +279,10 @@ static pdns_status_t logsqlite_log(void *rawpb) {
     int rttl = 0;
     char *rdata = NULL;
     char *policy = NULL;
+
+    if (disabled) {
+        return PDNS_OK;
+    }
 
     if (msg == NULL || msg->response == NULL) {
         return PDNS_OK;
@@ -293,18 +369,15 @@ static pdns_status_t logsqlite_log(void *rawpb) {
                     }
                 }
                 prepare_sql();
-                db_exec(sql, 1);
-                sqlite3_free(sql);
+                fifo_push_item(fifo, sql);
             }
         } else {
             prepare_sql();
-            db_exec(sql, 1);
-            sqlite3_free(sql);
+            fifo_push_item(fifo, sql);
         }
     } else {
         prepare_sql();
-        db_exec(sql, 1);
-        sqlite3_free(sql);
+        fifo_push_item(fifo, sql);
     }
 
     return PDNS_OK;

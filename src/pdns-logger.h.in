@@ -59,8 +59,11 @@ struct globals_s {
 
 typedef struct fifo_s fifo_t;
 fifo_t *fifo_init(void);
-pdns_status_t fifo_push(fifo_t *fifo, void *value);
-void *fifo_pop(fifo_t *fifo);
+pdns_status_t fifo_push_item(fifo_t *fifo, void *data);
+void *fifo_pop_item(fifo_t *fifo);
+void fifo_lock(fifo_t *fifo);
+void fifo_unlock(fifo_t *fifo);
+
 
 typedef pdns_status_t(*init_function_f)(const char *inifile);
 typedef pdns_status_t(*rotate_function_f)(void);

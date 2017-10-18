@@ -22,7 +22,7 @@ static FILE *fp = NULL;
 static char *file = NULL;
 static int force_flush = 0;
 static char rewrites_only = 1;
-/* static fifo_t *queue = NULL; */
+static char disabled = 0;
 
 static int opt_handler(void *user, const char *section, const char *name, const char *value, int lineno) {
     (void) user;
@@ -38,6 +38,8 @@ static int opt_handler(void *user, const char *section, const char *name, const 
             force_flush = atoi(value) ? 1 : 0;
         } else if (!strncmp(name, "only-rewrites", sizeof("only-rewrites"))) {
             rewrites_only = atoi(value) ? 1 : 0;
+        } else if (!strncmp(name, "disabled", sizeof("disabled"))) {
+            disabled = atoi(value) ? 1 : 0;
         } else {
             fprintf(stderr, "Unmanaged INI option '%s' at line %d\n", name, lineno);
         }
@@ -57,17 +59,15 @@ static pdns_status_t logfile_init(const char *inifile) {
         return PDNS_NO;
     }
 
+    if (disabled) {
+        fprintf(stderr, "logfile: Disabled according to configuration\n");
+        return PDNS_OK;
+    }
+
     if (zstr(file)) {
         fprintf(stderr, "logfile: no log file set. Disabling.\n");
         return PDNS_NO;
     }
-
-    /*
-       queue = fifo_init();
-       if ( queue == NULL ) {
-       return PDNS_NO;
-       }
-     */
 
     fp = fopen(file, "a");
     if (fp == NULL) {
@@ -106,8 +106,9 @@ static pdns_status_t logfile_stop(void) {
         if (force_flush) { \
             fflush(fp); \
         } \
-    } \
-    fprintf(stderr, "%s\n", str);
+    }
+
+    //fprintf(stderr, "%s\n", str);
 
 static pdns_status_t logfile_log(void *rawpb) {
     PBDNSMessage *msg = rawpb;
@@ -116,6 +117,10 @@ static pdns_status_t logfile_log(void *rawpb) {
     int sz, pc;
     char str[1024] = "";
     char tmp[1024] = "";
+
+    if (disabled) {
+        return PDNS_OK;
+    }
 
     if (msg == NULL || msg->response == NULL) {
         return PDNS_OK;

@@ -48,6 +48,7 @@ LOG_UUCP, "uucp"},};
 static char *ident = "pdns-logger";
 static char *facility = "daemon";
 static char rewrites_only = 1;
+static char disabled = 0;
 
 static int logfacility_lookup(const char *nfacility, int *logfacility) {
     unsigned int t;
@@ -81,6 +82,8 @@ static int opt_handler(void *user, const char *section, const char *name, const 
         } else if (!strncmp(name, "level", sizeof("level"))) {
         } else if (!strncmp(name, "only-rewrites", sizeof("only-rewrites"))) {
             rewrites_only = atoi(value) ? 1 : 0;
+        } else if (!strncmp(name, "disabled", sizeof("disabled"))) {
+            disabled = atoi(value) ? 1 : 0;
         } else {
             fprintf(stderr, "Unmanaged INI option '%s' at line %d\n", name, lineno);
         }
@@ -102,6 +105,11 @@ static pdns_status_t syslog_init(const char *inifile) {
         return PDNS_NO;
     }
 
+    if (disabled) {
+        fprintf(stderr, "syslog: Disabled according to configuration\n");
+        return PDNS_OK;
+    }
+
     logfacility_lookup(facility, &logf);
 
     openlog(!zstr(ident) ? ident : "pdns-logger", LOG_NDELAY | LOG_PID, logf);
@@ -119,8 +127,9 @@ static pdns_status_t syslog_stop(void) {
 }
 
 #define write_log() \
-    syslog(LOG_NOTICE, "%s", str); \
-    fprintf(stderr, "%s\n", str);
+    syslog(LOG_NOTICE, "%s", str);
+
+    //fprintf(stderr, "%s\n", str);
 
 static pdns_status_t syslog_log(void *rawpb) {
     PBDNSMessage *msg = rawpb;
@@ -129,6 +138,10 @@ static pdns_status_t syslog_log(void *rawpb) {
     int sz, pc;
     char str[1024] = "";
     char tmp[1024] = "";
+
+    if (disabled) {
+        return PDNS_OK;
+    }
 
     if (msg == NULL || msg->response == NULL) {
         return PDNS_OK;

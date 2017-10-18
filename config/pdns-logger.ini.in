@@ -11,16 +11,19 @@ bind-port=4242
 ;foreground=0            ; If set, this will override the CLI -f option
 
 [syslog]
+disabled = 0
 only-rewrites=0
 ident=pdns-logger
 facility=syslog
 
 [logfile]
+disabled = 0
 only-rewrites=0
 logfile=/var/log/pdns-logger/pdns.log
 force-flush=1
 
 [sqlite3]
+disabled = 0;
 only-rewrites=0
 dbfile=/var/lib/pdns-logger/queries.db
 

@@ -14,6 +14,7 @@
  *
  */
 
+#include <sys/time.h>
 #include <pthread.h>
 #include "pdns-logger.h"
 
@@ -25,9 +26,38 @@ struct fifo_item_s {
 
 struct fifo_s {
     pthread_mutex_t lock;
+
+    pthread_mutex_t sync_mutex;
+    pthread_cond_t sync_cond;
+
     fifo_item_t *head;
     fifo_item_t *tail;
 };
+
+static void fifo_wait_signal(fifo_t * fifo) {
+    int msw = 1000;
+    struct timeval tv;
+    struct timespec ts;
+
+    gettimeofday(&tv, NULL);
+    ts.tv_sec = time(NULL) + msw / 1000;
+    ts.tv_nsec = tv.tv_usec * 1000 + 1000 * 1000 * (msw % 1000);
+    ts.tv_sec += ts.tv_nsec / (1000 * 1000 * 1000);
+    ts.tv_nsec %= (1000 * 1000 * 1000);
+
+    pthread_mutex_lock(&fifo->sync_mutex);
+    pthread_cond_timedwait(&fifo->sync_cond, &fifo->sync_mutex, &ts);
+    pthread_mutex_unlock(&fifo->sync_mutex);
+
+    return;
+}
+
+static void fifo_send_signal(fifo_t * fifo) {
+    pthread_mutex_lock(&fifo->sync_mutex);
+    pthread_cond_signal(&fifo->sync_cond);
+    pthread_mutex_unlock(&fifo->sync_mutex);
+    return;
+}
 
 fifo_t *fifo_init(void) {
     fifo_t *fifo = NULL;
@@ -39,12 +69,16 @@ fifo_t *fifo_init(void) {
         pthread_mutexattr_init(&attr);
         pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
         pthread_mutex_init(&fifo->lock, &attr);
+
+        pthread_mutex_init(&fifo->sync_mutex, NULL);
+        pthread_cond_init(&fifo->sync_cond, NULL);
+
     }
 
     return fifo;
 }
 
-pdns_status_t fifo_push(fifo_t * fifo, void *value) {
+static pdns_status_t fifo_push(fifo_t * fifo, void *value) {
     fifo_item_t *item;
     if (fifo == NULL || value == NULL) {
         return PDNS_NO;
@@ -74,7 +108,7 @@ pdns_status_t fifo_push(fifo_t * fifo, void *value) {
     return PDNS_NO;
 }
 
-void *fifo_pop(fifo_t * fifo) {
+static void *fifo_pop(fifo_t * fifo) {
     void *ret;
     fifo_item_t *item = NULL;
 
@@ -101,4 +135,39 @@ void *fifo_pop(fifo_t * fifo) {
     }
 
     return NULL;
+}
+
+pdns_status_t fifo_push_item(fifo_t * fifo, void *data) {
+
+    if (fifo == NULL || data == NULL) {
+        return PDNS_NO;
+    }
+
+    if (fifo_push(fifo, data) == PDNS_OK) {
+        fifo_send_signal(fifo);
+        return PDNS_OK;
+    }
+
+    return PDNS_NO;
+}
+
+void *fifo_pop_item(fifo_t * fifo) {
+    if (fifo == NULL) {
+        return NULL;
+    }
+
+    fifo_wait_signal(fifo);
+    return fifo_pop(fifo);
+}
+
+void fifo_lock(fifo_t * fifo) {
+    if (fifo != NULL) {
+        pthread_mutex_lock(&fifo->lock);
+    }
+}
+
+void fifo_unlock(fifo_t * fifo) {
+    if (fifo != NULL) {
+        pthread_mutex_unlock(&fifo->lock);
+    }
 }
