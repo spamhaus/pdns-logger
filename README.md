@@ -53,16 +53,16 @@ Options:
 
 ```
 
+In the debian/ directory there is an init script (`pdns-logger.init`) that you can adapt and use for your purposes.
+
 DEBIAN OR UBUNTU PACKAGE
 ------------------------
 
 If you need a debian or an ubuntu package, the repository includes everything you need.
 
 ```bash
-
 apt-get install cdbs debhelper devscripts cmake build-essential pkg-config libprotobuf-c-dev libsqlite3-dev
 dpkg-buildpackage -uc -us -b
-
 ```
 
 After the process, you will have a nice debian/ubuntu package ready to be installed:
@@ -70,6 +70,23 @@ After the process, you will have a nice debian/ubuntu package ready to be instal
 ```bash
 dpkg -i ../pdns-logger*.deb
 ```
+
+POWERDNS CONFIGURATION
+----------------------
+
+To effectively use the daemon, you need to configure powerdns.
+If you're using RPZ, you already know that you need to add the following configuration to recursor.conf:
+```
+lua-config-file=/etc/powerdns/recursor.conf.lua
+```
+
+What you're probably missing is that in the recursor.conf.lua you need to add:
+```lua
+protobufServer("127.0.0.1:4242")
+```
+
+This will instruct powerdns-recursor to send the logs to our daemon.
+Please notice that the IP address and the port must match what is configured in the .ini file of the daemon.
 
 Developement
 ------------
@@ -79,3 +96,6 @@ Developement
 Authors
 -------
 [Massimo Cetra](http://www.ctrix.it/)
+
+
+Enjoy!
