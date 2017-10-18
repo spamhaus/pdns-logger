@@ -21,5 +21,5 @@ package:debian:
     tags:
         - ubuntu
 
-#    only:
-#        - tags
+##    only:
+##        - tags
