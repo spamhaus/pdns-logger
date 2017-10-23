@@ -11,6 +11,7 @@ build:ubuntu:xenial:
         - dpkg-buildpackage -uc -us -b
         - rm -rf artifacts && mkdir -p artifacts
         - mv ../pdns-logger*.deb artifacts/
+        - mv ../pdns-logger*.changes artifacts/
     artifacts:
         expire_in: 1 month
         paths:
