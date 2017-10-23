@@ -2,6 +2,42 @@ stages:
     - build
     - deploy
 
+build:debian:stretch:
+    stage: build
+    before_script:
+        - sudo apt-get update
+        - sudo apt-get -y install cdbs debhelper devscripts sed cmake build-essential pkg-config libprotobuf-c-dev libsqlite3-dev libsystemd-dev
+    script:
+        - dpkg-buildpackage -uc -us -b
+        - rm -rf artifacts && mkdir -p artifacts
+        - mv ../pdns-logger*.deb artifacts/
+        - mv ../pdns-logger*.changes artifacts/
+    artifacts:
+        expire_in: 1 month
+        paths:
+            - artifacts/*
+    tags:
+        - debian-stretch
+
+deploy:debian:stretch:
+    stage: deploy
+    tags:
+        - debian-stretch
+    dependencies:
+        - build:ubuntu:xenial
+    script:
+        - echo "Deploying to repository"
+        - pushd artifacts
+        - sed -i.bak "s|unstable|stretch|" *.changes
+        - grep Distribution *.changes && /usr/bin/dput glab *.changes
+        - popd
+    only:
+        - web # Pipelines run from the "Run Pipeline" button in Gitlab UI
+
+# ****************************************************************************
+# ****************************************************************************
+# ****************************************************************************
+
 build:ubuntu:xenial:
     stage: build
     before_script:
@@ -27,7 +63,7 @@ deploy:ubuntu:xenial:
         - build:ubuntu:xenial
     script:
         - echo "Deploying to repository"
-        - ls -la && pushd artifacts
+        - pushd artifacts
         - sed -i.bak "s|unstable|xenial|" *.changes
         - grep Distribution *.changes && /usr/bin/dput glab *.changes
         - popd
