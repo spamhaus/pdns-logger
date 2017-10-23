@@ -1,7 +1,8 @@
 stages:
     - build
+    - deploy
 
-package:debian:
+build:ubuntu:xenial:
     stage: build
     before_script:
         - sudo apt-get update
@@ -10,16 +11,24 @@ package:debian:
         - dpkg-buildpackage -uc -us -b
         - rm -rf artifacts && mkdir -p artifacts
         - mv ../pdns-logger*.deb artifacts/
-        #- mv ../pdns-logger*.changes artifacts/
-        #- mv ../pdns-logger*.tar.gz artifacts/
-        #- mv ../pdns-logger*.dsc artifacts/
-        #- mv ../pdns-logger*.buildinfo artifacts/
     artifacts:
         expire_in: 1 month
         paths:
             - artifacts/*
     tags:
-        - ubuntu
+        - ubuntu-16.04
 
-##    only:
-##        - tags
+deploy:ubuntu:xenial:
+    stage: deploy
+    tags:
+        - ubuntu-16.04
+    dependencies:
+        - build:ubuntu:xenial
+    script:
+        - echo "Deploying to repository"
+        - ls -la && pushd artifacts
+        - /bin/sed -i.bak 's/Distribution: unstable/Distribution: xenial/' *.changes
+        - grep Distribution *.changes && /usr/bin/dput glab *.changes
+        - popd
+    only:
+        - web # Pipelines run from the "Run Pipeline" button in Gitlab UI
