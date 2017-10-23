@@ -27,7 +27,7 @@ deploy:ubuntu:xenial:
     script:
         - echo "Deploying to repository"
         - ls -la && pushd artifacts
-        - /bin/sed -i.bak 's/Distribution: unstable/Distribution: xenial/' *.changes
+        - /bin/sed -i.bak 's/Distribution: unstable/Distribution: xenial/' pdns-logger*.changes
         - grep Distribution *.changes && /usr/bin/dput glab *.changes
         - popd
     only:
