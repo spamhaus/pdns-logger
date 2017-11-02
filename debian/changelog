@@ -1,7 +1,13 @@
+pdns-logger (1.0-2) unstable; urgency=low
+
+  * Modified the default config options
+  * documentation improvements.
+  * autocommit feature for sqlite added, defaulting to 1
+
+ -- MC <mc@spamteq.com>  Thu, 02 Nov 2017 11:22:31 +0000
+
 pdns-logger (1.0-1) unstable; urgency=low
 
   * First version
 
  -- MC <mc@spamteq.com>  Thu, 12 Oct 2017 11:22:31 +0000
-
- 

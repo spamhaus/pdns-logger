@@ -137,6 +137,7 @@ disabled = 1;           ; should we disable the sqlite3 backend ?
 only-rewrites=1         ; log only RPZ rewrites
                         ; what is the path to our sqlite3 database ?
 dbfile=/var/lib/pdns-logger/queries.db
+autocommit=1            ; should the backend commit to file for every record ?
 ```
 
 LOG FORMAT
@@ -187,6 +188,9 @@ CREATE TABLE IF NOT EXISTS logs (
 )
 ```
 The meaning of the columns are identical to the corresponding text version.
+
+
+Please note that a SIGHUP signal delivered to the daemon will flush the log files to disk and will allow for log rotation, closing and reopening all files.
 
 
 DEVELOPEMENT

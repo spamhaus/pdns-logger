@@ -31,7 +31,7 @@ disabled = 1;           ; should we disable the sqlite3 backend ?
 only-rewrites=1         ; log only RPZ rewrites
                         ; what is the path to our sqlite3 database ?
 dbfile=/var/lib/pdns-logger/queries.db
-
+autocommit=1            ; should the backend commit to file for every record ?
 
 ; NOTES:
 ;

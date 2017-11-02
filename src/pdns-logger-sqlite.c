@@ -28,6 +28,7 @@ static fifo_t *fifo = NULL;
 static pthread_t bgthread;
 static char bgrunning = 0;
 static char disabled = 0;
+static char autocommit = 1;
 
 /* *************************************************************************** */
 /* *************************************************************************** */
@@ -108,10 +109,13 @@ static pdns_status_t db_exec(const char *sql, char log) {
 }
 
 static pdns_status_t db_flush(void) {
-    if (!sqlite3_get_autocommit(db)) {
-        db_exec("COMMIT", 1);
+    if ( autocommit == 0 ) {
+        if (!sqlite3_get_autocommit(db)) {
+            printf("Flushing and committing SQLite3 DB\n");
+            db_exec("COMMIT", 1);
+        }
+        db_exec("BEGIN", 1);
     }
-    db_exec("BEGIN", 1);
 
     return PDNS_OK;
 }
@@ -188,6 +192,8 @@ static int opt_handler(void *user, const char *section, const char *name, const 
             rewrites_only = atoi(value) ? 1 : 0;
         } else if (!strncmp(name, "disabled", sizeof("disabled"))) {
             disabled = atoi(value) ? 1 : 0;
+        } else if (!strncmp(name, "autocommit", sizeof("autocommit"))) {
+            autocommit = atoi(value) ? 1 : 0;
         } else {
             fprintf(stderr, "Unmanaged INI option '%s' at line %d\n", name, lineno);
         }
@@ -279,6 +285,7 @@ static pdns_status_t logsqlite_log(void *rawpb) {
     int rttl = 0;
     char *rdata = NULL;
     char *policy = NULL;
+
 
     if (disabled) {
         return PDNS_OK;
