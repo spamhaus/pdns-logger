@@ -15,8 +15,29 @@ Syslog and sqlite3 came later to add more features and increase the use cases.
 
 In particular, the sqlite3 database can be easily used to log queries and show them on a nice web interface.
 
-Installation
-------------
+DEBIAN OR UBUNTU PACKAGE
+------------------------
+
+If you need a debian or an ubuntu package, the repository includes everything you need.
+
+First, you need to install the build environment and the required developent libraries.
+```bash
+apt-get install cdbs debhelper devscripts cmake build-essential pkg-config libprotobuf-c-dev libsqlite3-dev
+```
+
+Then you need to start the configuration, compilation and the build of the packages. Don't worry, it's a single command:
+```bash
+dpkg-buildpackage -uc -us -b
+```
+
+After the process, you will have a nice debian/ubuntu package ready to be installed:
+
+```bash
+dpkg -i ../pdns-logger*.deb
+```
+
+MANUAL INSTALLATION
+-------------------
 
 To compile pdns-logger, you need [cmake](https://cmake.org/).
 
@@ -43,38 +64,15 @@ After installation, you will have
 
 Command line options are:
 ```bash
-
 Usage: pdns-collector [options]
 Options:
   -c configfile       Location of the config file (default: /etc/pdns-logger/pdns-logger.ini)
   -f                  Do not fork and stay in foreground
   -h                  Print this message and exit.
 
-
 ```
 
 In the debian/ directory there is an init script (`pdns-logger.init`) that you can adapt and use for your purposes.
-
-DEBIAN OR UBUNTU PACKAGE
-------------------------
-
-If you need a debian or an ubuntu package, the repository includes everything you need.
-
-First, you need to install the build environment and the required developent libraries.
-```bash
-apt-get install cdbs debhelper devscripts cmake build-essential pkg-config libprotobuf-c-dev libsqlite3-dev
-```
-
-Then you need to start the configuration, compilation and the build of the packages. Don't worry, it's a single command:
-```bash
-dpkg-buildpackage -uc -us -b
-```
-
-After the process, you will have a nice debian/ubuntu package ready to be installed:
-
-```bash
-dpkg -i ../pdns-logger*.deb
-```
 
 POWERDNS CONFIGURATION
 ----------------------
@@ -141,14 +139,64 @@ only-rewrites=0         ; log only RPZ rewrites
 dbfile=/var/lib/pdns-logger/queries.db
 ```
 
-Developement
+LOG FORMAT
+----------
+
+The logfile and the syslog backends share the same format.
+Each line will have the following format:
+```
+Nov  2 18:01:19 NS0 pdns-logger[12718]: QID: 20542 from: 127.0.0.1 qtype: A qclass: IN qname: dbltest.com. rcode: NXDOMAIN rrcount: 0 policy: 'DBL'
+```
+
+The sinble bits in the line are:
+* QID: the query ID, as sent from the client to the DNS server
+* FROM: the querier IP address
+* QTYPE: the query type (A, NS, MX, ...)
+* QCLASS: the query class. Usually it's always 'IN'
+* QNAME: the query name, that is the main thing that you need to know.
+* RCODE: the response code sent back to the client (NXDOMAIN, NOERROR etcc...)
+* RRCOUNT: the number of RR sent back in the response packet
+* POLICY: it's the policy, if present, applied to the response packet, according to an RPZ zone. This bit may be missing if the query was not rewritten.
+
+When the response packet contains more than one RR, then additional fields (or tuples, if RRCOUNT is greater than one) will apply:
+* RNAME: the domain name sent back
+* RTYPE: the response type
+* RCLASS: same as QCLASS
+* RTTL: the TTL of the record
+* RDATA: the valie of the RR - Remember that PDNS does log all the rewrites and additional queries (but not all RTYPEs)
+
+
+The sqlite backend stores the same data in a table with the following schema:
+
+```sql
+CREATE TABLE IF NOT EXISTS logs ( 
+   ts      INTEGER NOT NULL, 
+   querier VARCHAR(48), 
+   id      INTEGER NOT NULL, 
+   qtype   VARCHAR(10), 
+   qclass  VARCHAR(10), 
+   qname   VARCHAR(256), 
+   rcode   VARCHAR(16), 
+   rcount  INTEGER, 
+   rname   VARCHAR(256), 
+   rtype   VARCHAR(10), 
+   rclass  VARCHAR(10), 
+   rttl    INTEGER, 
+   rdata   VARCHAR(256), 
+   policy  VARCHAR(100)
+)"
+```
+The meaning of the columns are identical to the corresponding text version.
+
+
+DEVELOPEMENT
 ------------
 - Source hosted at [GitHub](https://github.com/spamhays/pdns-logger)
 - Report issues, questions, feature requests on [GitHub Issues](https://github.com/spamhaus/pdns-logger/issues)
 
 Authors
 -------
-[Massimo Cetra](http://www.ctrix.it/)
+[Massimo Cetra] (http://www.ctrix.it/)
 
 
 Enjoy!
