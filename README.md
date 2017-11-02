@@ -60,10 +60,12 @@ DEBIAN OR UBUNTU PACKAGE
 
 If you need a debian or an ubuntu package, the repository includes everything you need.
 
+First, you need to install the build environment and the required developent libraries.
 ```bash
 apt-get install cdbs debhelper devscripts cmake build-essential pkg-config libprotobuf-c-dev libsqlite3-dev
 ```
 
+Then you need to start the configuration, compilation and the build of the packages. Don't worry, it's a single command:
 ```bash
 dpkg-buildpackage -uc -us -b
 ```
@@ -90,6 +92,20 @@ protobufServer("127.0.0.1:4242")
 
 This will instruct powerdns-recursor to send the logs to our daemon.
 Please notice that the IP address and the port must match what is configured in the .ini file of the daemon.
+
+Restart the recursor. If you're on debian or ubuntu, 
+
+```bash
+service pdns-resolver restart 
+```
+
+will be enough.
+
+PDNS-LOGGER CONFIGURATION
+-------------------------
+Don't forget to have a look and eventually modify the configuration of the logger.
+The configuration INI file is usually in "/etc/pdns-logger/pdns-logger.ini" and contains very few directives.
+
 
 Developement
 ------------
