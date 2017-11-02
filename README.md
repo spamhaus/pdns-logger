@@ -119,7 +119,7 @@ bind-port=4242
 
 [logfile]
 disabled = 0            ; should we disable the log-to-file backend ?
-only-rewrites=0         ; log only RPZ rewrites
+only-rewrites=1         ; log only RPZ rewrites
                         ; what is the path of our log file ?
 logfile=/var/log/pdns-logger/pdns.log
 force-flush=1           ; flush buffers to disk at each query
@@ -127,14 +127,14 @@ force-flush=1           ; flush buffers to disk at each query
 
 [syslog]
 disabled = 1            ; Should we disable the syslog backend ?
-only-rewrites=0         ; log only RPZ rewrites
+only-rewrites=1         ; log only RPZ rewrites
 ident=pdns-logger       ; the syslog ident
 facility=syslog         ; the log facility
 
 
 [sqlite3]
 disabled = 1;           ; should we disable the sqlite3 backend ?
-only-rewrites=0         ; log only RPZ rewrites
+only-rewrites=1         ; log only RPZ rewrites
                         ; what is the path to our sqlite3 database ?
 dbfile=/var/lib/pdns-logger/queries.db
 ```
