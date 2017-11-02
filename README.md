@@ -91,12 +91,17 @@ protobufServer("127.0.0.1:4242")
 ```
 
 This will instruct powerdns-recursor to send the logs to our daemon.
+If you're using pdns-recursor 4.1.0 or higher, you may want to use this command instead. With this, you will be able to log only the RPZ rewrites and not all the queries sent to the logger.:
+```lua
+protobufServer("127.0.0.1:4242", 2, 100, 1, 32, 128, false, true)
+```
+
 Please notice that the IP address and the port must match what is configured in the .ini file of the daemon.
 
-Restart the recursor. If you're on debian or ubuntu, 
+Restart the recursor. If you're on debian or ubuntu, then
 
 ```bash
-service pdns-resolver restart 
+service pdns-resolver restart
 ```
 
 will be enough.
@@ -106,6 +111,35 @@ PDNS-LOGGER CONFIGURATION
 Don't forget to have a look and eventually modify the configuration of the logger.
 The configuration INI file is usually in "/etc/pdns-logger/pdns-logger.ini" and contains very few directives.
 
+```ini
+[globals]
+allow-root=0
+bind-ip=127.0.0.1
+bind-port=4242
+;foreground=0            ; If set, this will override the CLI -f option
+
+
+[syslog]
+disabled = 0            ; Should we disable the syslog backend ?
+only-rewrites=0         ; log only RPZ rewrites
+ident=pdns-logger       ; the syslog ident
+facility=syslog         ; the log facility
+
+
+[logfile]
+disabled = 0            ; should we disable the log-to-file backend ?
+only-rewrites=0         ; log only RPZ rewrites
+                        ; what is the path of our log file ?
+logfile=/var/log/pdns-logger/pdns.log
+force-flush=1           ; flush buffers to disk at each query
+
+
+[sqlite3]
+disabled = 0;           ; should we disable the sqlite3 backend ?
+only-rewrites=0         ; log only RPZ rewrites
+                        ; what is the path to our sqlite3 database ?
+dbfile=/var/lib/pdns-logger/queries.db
+```
 
 Developement
 ------------
