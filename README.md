@@ -61,8 +61,9 @@ DEBIAN OR UBUNTU PACKAGE
 If you need a debian or an ubuntu package, the repository includes everything you need.
 
 ```bash
-apt-get install cdbs debhelper devscripts cmake build-essential pkg-config libprotobuf-c-dev libsqlite3-dev
-dpkg-buildpackage -uc -us -b
+# apt-get install cdbs debhelper devscripts cmake build-essential pkg-config libprotobuf-c-dev libsqlite3-dev
+
+# dpkg-buildpackage -uc -us -b
 ```
 
 After the process, you will have a nice debian/ubuntu package ready to be installed:
