@@ -184,7 +184,7 @@ CREATE TABLE IF NOT EXISTS logs (
    rttl    INTEGER, 
    rdata   VARCHAR(256), 
    policy  VARCHAR(100)
-)"
+)
 ```
 The meaning of the columns are identical to the corresponding text version.
 
