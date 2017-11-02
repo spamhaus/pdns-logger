@@ -117,13 +117,6 @@ bind-port=4242
 ;foreground=0            ; If set, this will override the CLI -f option
 
 
-[syslog]
-disabled = 0            ; Should we disable the syslog backend ?
-only-rewrites=0         ; log only RPZ rewrites
-ident=pdns-logger       ; the syslog ident
-facility=syslog         ; the log facility
-
-
 [logfile]
 disabled = 0            ; should we disable the log-to-file backend ?
 only-rewrites=0         ; log only RPZ rewrites
@@ -132,8 +125,15 @@ logfile=/var/log/pdns-logger/pdns.log
 force-flush=1           ; flush buffers to disk at each query
 
 
+[syslog]
+disabled = 1            ; Should we disable the syslog backend ?
+only-rewrites=0         ; log only RPZ rewrites
+ident=pdns-logger       ; the syslog ident
+facility=syslog         ; the log facility
+
+
 [sqlite3]
-disabled = 0;           ; should we disable the sqlite3 backend ?
+disabled = 1;           ; should we disable the sqlite3 backend ?
 only-rewrites=0         ; log only RPZ rewrites
                         ; what is the path to our sqlite3 database ?
 dbfile=/var/lib/pdns-logger/queries.db
