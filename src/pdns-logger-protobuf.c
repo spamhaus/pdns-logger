@@ -217,7 +217,7 @@ static pdns_status_t socket_start(globals_t * conf) {
     }
 
     sa.sin_family = AF_INET;
-    sa.sin_addr.s_addr = INADDR_ANY;
+    sa.sin_addr.s_addr = inet_addr(conf->bind_ip);
     sa.sin_port = htons(conf->bind_port);
 
     flags = 1;
