@@ -133,7 +133,19 @@ static pdns_status_t logfile_log(void *rawpb) {
     }
 
     sz = sizeof(str) - 1;
-
+    
+    //adding timestampt to file log
+    //format : [ 15 6 2022 14:55:58 ] 
+    time_t rawtime;
+    struct tm * timeinfo;    
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+    pc=snprintf (tmp, sizeof(tmp), "[ %d %d %d %d:%d:%d ]", timeinfo->tm_mday,
+                timeinfo->tm_mon + 1, timeinfo->tm_year + 1900,
+                timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
+    strncat(str, tmp, sz);
+    sz -= pc;
+    
     if (msg->has_id) {
         pc = snprintf(tmp, sizeof(tmp), "QID: %d ", msg->id);
         strncat(str, tmp, sz);
