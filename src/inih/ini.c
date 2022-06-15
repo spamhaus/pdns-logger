@@ -14,6 +14,7 @@ https://github.com/benhoyt/inih
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h>
+#include <time.h>
 
 #include "ini.h"
 
