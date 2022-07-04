@@ -115,8 +115,8 @@ static pdns_status_t logfile_log(void *rawpb) {
     PBDNSMessage__DNSQuestion *q;
     PBDNSMessage__DNSResponse *r;
     int sz, pc;
-    char str[1024] = "";
-    char tmp[1024] = "";
+    char str[4096] = "";
+    char tmp[4096] = "";
 
     if (disabled) {
         return PDNS_OK;
