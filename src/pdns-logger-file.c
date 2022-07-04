@@ -135,14 +135,25 @@ static pdns_status_t logfile_log(void *rawpb) {
     sz = sizeof(str) - 1;
     
     //adding timestampt to file log
-    //format : [ 15 6 2022 14:55:58 ] 
+    //format : Jan 01 2022 log... 
+    char mounthString[4];
+    const char * months[12] = {"Jan", "Feb", "Mar", "Apr", "May", "June", "July", "Aug", "Sep", "Oct", "Nov", "Dec"};
     time_t rawtime;
     struct tm * timeinfo;    
+
     time(&rawtime);
     timeinfo = localtime(&rawtime);
-    pc=snprintf (tmp, sizeof(tmp), "[ %d %d %d %d:%d:%d ]", timeinfo->tm_mday,
-                timeinfo->tm_mon + 1, timeinfo->tm_year + 1900,
+
+    //convert int to string mounth
+    if (timeinfo->tm_mon >= 0 && timeinfo->tm_mon < 12 ){
+        snprintf(mounthString, 4, months[timeinfo->tm_mon]);
+    }else{
+        snprintf(mounthString, 4, "N/A ");
+    }
+    pc=snprintf (tmp, sizeof(tmp), " %s %d %d %d:%d:%d ", mounthString,
+                timeinfo->tm_mday , timeinfo->tm_year + 1900,
                 timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
+
     strncat(str, tmp, sz);
     sz -= pc;
     
