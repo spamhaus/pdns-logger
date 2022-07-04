@@ -16,7 +16,8 @@ extern "C" {
 #endif
 
 #include <stdio.h>
-
+#include <time.h>
+    
 /* Nonzero if ini_handler callback should accept lineno parameter. */
 #ifndef INI_HANDLER_LINENO
 #define INI_HANDLER_LINENO 1
