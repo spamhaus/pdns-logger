@@ -115,8 +115,8 @@ static pdns_status_t logfile_log(void *rawpb) {
     PBDNSMessage__DNSQuestion *q;
     PBDNSMessage__DNSResponse *r;
     int sz, pc;
-    char str[1024] = "";
-    char tmp[1024] = "";
+    char str[4096] = "";
+    char tmp[4096] = "";
 
     if (disabled) {
         return PDNS_OK;
@@ -133,7 +133,30 @@ static pdns_status_t logfile_log(void *rawpb) {
     }
 
     sz = sizeof(str) - 1;
+    
+    //adding timestampt to file log
+    //format : Jan 01 2022 log... 
+    char mounthString[4];
+    const char * months[12] = {"Jan", "Feb", "Mar", "Apr", "May", "June", "July", "Aug", "Sep", "Oct", "Nov", "Dec"};
+    time_t rawtime;
+    struct tm * timeinfo;    
 
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+
+    //convert int to string mounth
+    if (timeinfo->tm_mon >= 0 && timeinfo->tm_mon < 12 ){
+        snprintf(mounthString, 4, months[timeinfo->tm_mon]);
+    }else{
+        snprintf(mounthString, 4, "N/A ");
+    }
+    pc=snprintf (tmp, sizeof(tmp), " %s %d %d %d:%d:%d ", mounthString,
+                timeinfo->tm_mday , timeinfo->tm_year + 1900,
+                timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
+
+    strncat(str, tmp, sz);
+    sz -= pc;
+    
     if (msg->has_id) {
         pc = snprintf(tmp, sizeof(tmp), "QID: %d ", msg->id);
         strncat(str, tmp, sz);
